@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  image       String?
+
+  volume      String?
+  brand       String?
+
+  categoryId  Int
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  variants    Variant[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Variant {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  price     Float?
+  stock     Int      @default(0)
+  sku       String?
+  image     String?
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      String   @default("user")
+
+  createdAt DateTime @default(now())
+}
+
+model Video {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  videoUrl    String
+  thumbnail   String?
+  date        DateTime?
+
+  createdAt   DateTime  @default(now())
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  displayName String?
+  brand     String
+  products  Product[]
+
+  createdAt DateTime @default(now())
+}

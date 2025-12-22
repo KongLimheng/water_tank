@@ -1,0 +1,49 @@
+{
+  "name": "h2o-premium",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "server": "nodemon --watch server --exec tsx server/server.ts",
+    "client": "vite",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "db:push": "npx prisma db push",
+    "db:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@google/genai": "^1.32.0",
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "bcryptjs": "^3.0.3",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "lucide-react": "^0.556.0",
+    "nodemon": "^3.1.11",
+    "path": "^0.12.7",
+    "pg": "^8.16.3",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "react-router-dom": "6.28.0",
+    "sqlite3": "^5.1.7",
+    "url": "^0.11.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.14.0",
+    "@types/pg": "^8.16.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "prisma": "^7.2.0",
+    "tailwindcss": "^3.4.19",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
