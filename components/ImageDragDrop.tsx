@@ -1,114 +1,136 @@
-import { Edit, Trash2, UploadCloud } from 'lucide-react'
-import React, { useState } from 'react'
-import { Product } from '../types'
+import { Trash2, UploadCloud } from 'lucide-react'
+import { useState } from 'react'
 
 interface ImageDragDropProps {
-  dragActive: boolean
-  formData: Partial<Product>
-  handleDrag: (e: React.DragEvent) => void
-  handleDrop: (e: React.DragEvent) => void
-  setFormData: React.Dispatch<React.SetStateAction<Partial<Product>>>
+  removeImage: (idx: number) => void
+  handleFilesSelected: (e: FileList | null) => void
+  previewUrls: string[]
+  maxFiles?: number
 }
 
-const ImageDragDrop = ({ formData, setFormData }: ImageDragDropProps) => {
+const ImageDragDrop = ({
+  handleFilesSelected,
+  removeImage,
+  previewUrls,
+  maxFiles = 5,
+}: ImageDragDropProps) => {
   const [dragActive, setDragActive] = useState(false)
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
-    } else if (e.type === 'dragleave') {
-      setDragActive(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleFileSelection = (files: FileList | null) => {
+    if (!files) return
+
+    const currentCount = previewUrls.length
+    const newFilesCount = files.length
+    const totalAfterAdd = currentCount + newFilesCount
+    if (totalAfterAdd > maxFiles) {
+      setError(`You can only upload up to ${maxFiles} images.`)
     }
+
+    handleFilesSelected(files)
   }
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const base64 = await handleFileUpload(e.dataTransfer.files[0])
-      setFormData({ ...formData, image: base64 })
-    }
-  }
-
-  const handleFileUpload = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-  }
-
   return (
     <>
       <div
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-2 transition-all duration-200 text-center ${
+        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
           dragActive
             ? 'border-primary-500 bg-primary-50'
-            : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+            : previewUrls.length >= maxFiles
+            ? 'border-slate-200 bg-slate-50 cursor-not-allowed'
+            : 'border-slate-300 hover:bg-slate-50'
         }`}
+        onDragEnter={(e) => {
+          e.preventDefault()
+          setDragActive(true)
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          setDragActive(false)
+        }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragActive(false)
+          if (e.dataTransfer.files) handleFileSelection(e.dataTransfer.files)
+        }}
       >
         <input
           type="file"
-          id="image-upload"
+          id="img-upload"
           className="hidden"
+          multiple
           accept="image/*"
-          onChange={async (e) => {
-            if (e.target.files?.[0]) {
-              const base64 = await handleFileUpload(e.target.files[0])
-              setFormData({ ...formData, image: base64 })
-            }
-          }}
+          disabled={previewUrls.length >= maxFiles}
+          onChange={(e) => handleFileSelection(e.target.files)}
         />
+        <label
+          htmlFor="img-upload"
+          className="cursor-pointer flex flex-col items-center"
+        >
+          <UploadCloud className="text-slate-400 mb-2" size={32} />
 
-        {formData.image ? (
-          <div className="relative group inline-block">
-            <img
-              src={formData.image}
-              alt="Preview"
-              className="h-48 w-auto object-contain rounded-lg shadow-sm"
-            />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2 backdrop-blur-sm">
-              <label
-                htmlFor="image-upload"
-                className="cursor-pointer p-2 bg-white rounded-full text-slate-700 hover:bg-slate-100 shadow-lg transition-transform hover:scale-110"
-              >
-                <Edit size={20} />
-              </label>
+          <p className="text-sm text-slate-600 font-medium">
+            {previewUrls.length >= maxFiles ? (
+              <span>Maximum {maxFiles} images reached</span>
+            ) : (
+              <span>Click to upload or drag & drop</span>
+            )}
+          </p>
+        </label>
+      </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {previewUrls.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <p className="text-sm font-medium text-slate-700">
+              Selected images ({previewUrls.length}/{maxFiles})
+            </p>
+
+            {previewUrls.length > 0 && (
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, image: '' })}
-                className="p-2 bg-white rounded-full text-red-500 hover:bg-red-50 shadow-lg transition-transform hover:scale-110"
+                onClick={() => {
+                  // Remove all images logic would need to be added to parent component
+                  // For now, this is just UI
+                  setError(null)
+                }}
+                className="text-sm text-red-600 hover:text-red-800"
               >
-                <Trash2 size={20} />
+                Clear all
               </button>
-            </div>
+            )}
           </div>
-        ) : (
-          <label
-            htmlFor="image-upload"
-            className="cursor-pointer flex flex-col items-center w-full h-full"
-          >
-            <div className="w-12 h-12 bg-white border border-slate-200 rounded-xl flex items-center justify-center mb-4 shadow-sm">
-              <UploadCloud className="text-slate-600" size={24} />
-            </div>
-            <p className="text-base text-slate-700 font-medium mb-1">
-              <span className="text-primary-600 font-bold hover:underline">
-                Click to upload
-              </span>{' '}
-              or drag and drop
-            </p>
-            <p className="text-xs text-slate-400">SVG, PNG, JPG</p>
-          </label>
-        )}
-      </div>
+
+          <div className="flex flex-wrap gap-3">
+            {previewUrls.map((url, i) => (
+              <div
+                key={i}
+                className="relative w-20 h-20 rounded-lg overflow-hidden group border border-slate-200"
+              >
+                <img
+                  src={url}
+                  className="w-full h-full object-cover"
+                  alt="preview"
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(i)}
+                  className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="text-white" size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   )
 }

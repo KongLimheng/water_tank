@@ -11,7 +11,11 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement)
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+      }}
+    >
       <App />
     </BrowserRouter>
   </React.StrictMode>

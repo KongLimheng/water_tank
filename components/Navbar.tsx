@@ -20,7 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onCartClick }) => {
   const handleBrandSelect = (brand: string) => {
     setMobileMenuOpen(false)
     // Use URL params for filtering
-    navigate(`/?brand=${brand}`)
+    navigate(`/?brand=${brand}&category=all`)
   }
 
   return (
@@ -62,7 +62,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onCartClick }) => {
               <div className="absolute top-full left-0 w-48 bg-white rounded-xl shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 overflow-hidden">
                 <div className="p-1">
                   <Link
-                    to="/?brand=Grown"
+                    to="/?brand=Grown&category=all"
                     className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-between group/item hover:bg-slate-50 text-slate-700"
                   >
                     Grown{' '}
@@ -72,7 +72,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onCartClick }) => {
                     />
                   </Link>
                   <Link
-                    to="/?brand=Diamond"
+                    to="/?brand=Diamond&category=all"
                     className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-between group/item hover:bg-slate-50 text-slate-700"
                   >
                     Diamond{' '}
@@ -141,7 +141,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onCartClick }) => {
             <Link
               to="/videos"
               onClick={() => setMobileMenuOpen(false)}
-              className="block w-full text-left py-2 px-3 rounded-lg flex items-center gap-2 text-slate-600"
+              className=" w-full text-left py-2 px-3 rounded-lg flex items-center gap-2 text-slate-600"
             >
               <PlaySquare size={16} /> Video Guides
             </Link>

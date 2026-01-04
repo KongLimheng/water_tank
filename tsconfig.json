@@ -11,14 +11,15 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "paths": {
       "@/*": ["./*"]
     },
-    "allowImportingTsExtensions": true,
+    // "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["server/**/*.ts"],
+  "include": ["server/**/*.ts", "prisma.config.ts"],
   "exclude": ["node_modules"]
 }

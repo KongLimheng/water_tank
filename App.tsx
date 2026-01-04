@@ -9,14 +9,14 @@ import VideoGallery from './components/VideoGallery'
 import { getCurrentUser } from './services/authService'
 import { getProducts } from './services/productService'
 import { DEFAULT_SETTINGS, getSettings } from './services/settingsService'
-import { CartItem, Product, ProductVariant, SiteSettings } from './types'
+import { CartItem, ProductList, SiteSettings } from './types'
 
 const App: React.FC = () => {
   const location = useLocation()
   const [isCartOpen, setIsCartOpen] = useState(false)
 
   // Products state is now managed via API fetches
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<ProductList[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const [cart, setCart] = useState<CartItem[]>([])
@@ -42,47 +42,6 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleAddToCart = (product: Product, variant?: ProductVariant) => {
-    let itemPrice = product.price
-    let itemName = product.name
-    let itemImage = product.image
-
-    if (variant) {
-      itemPrice = variant.price
-      itemName = `${product.name} (${variant.name})`
-      if (variant.image) itemImage = variant.image
-    }
-
-    setCart((prev) => {
-      const existing = prev.find(
-        (item) =>
-          item.id === product.id && item.selectedVariantId === variant?.id
-      )
-
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id && item.selectedVariantId === variant?.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
-      }
-
-      return [
-        ...prev,
-        {
-          ...product,
-          quantity: 1,
-          price: itemPrice,
-          name: itemName,
-          image: itemImage,
-          selectedVariantId: variant?.id,
-          selectedVariantName: variant?.name,
-        },
-      ]
-    })
-    setIsCartOpen(true)
   }
 
   const handleRemoveFromCart = (id: number) => {
@@ -121,7 +80,7 @@ const App: React.FC = () => {
       return <Navigate to="/login" replace />
     }
 
-    if (user.role !== 'admin') {
+    if (user.role.toLowerCase() !== 'admin') {
       return <Navigate to="/" replace />
     }
 
@@ -169,13 +128,7 @@ const App: React.FC = () => {
         <Routes>
           <Route
             path="/"
-            element={
-              <Shop
-                products={products}
-                isLoading={isLoading}
-                onAddToCart={handleAddToCart}
-              />
-            }
+            element={<Shop products={products} isLoading={isLoading} />}
           />
           <Route path="/videos" element={<VideoGallery />} />
         </Routes>

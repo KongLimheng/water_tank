@@ -24,21 +24,7 @@ export const getVideos = async (): Promise<Video[]> => {
     if (!response.ok) throw new Error('Network response was not ok')
     return await response.json()
   } catch (error) {
-    console.warn('Backend unavailable. Mocking Videos.')
-    const local = getLocalVideos()
-    if (local.length === 0) {
-      // Return some dummy data if empty
-      return [
-        {
-          id: 1,
-          title: 'How to clean your dispenser',
-          description: 'Maintenance guide for H2O dispensers.',
-          videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-          date: new Date().toISOString(),
-        },
-      ]
-    }
-    return local
+    return []
   }
 }
 

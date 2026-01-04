@@ -69,7 +69,7 @@ const VideoGallery: React.FC = () => {
                   )}
                 </div>
 
-                <div className="p-6 flex-1 flex flex-col">
+                <div className="p-3 flex-1 flex flex-col">
                   <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
                     <Calendar size={12} />
                     <span>{new Date(video.date).toLocaleDateString()}</span>

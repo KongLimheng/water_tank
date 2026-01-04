@@ -2,6 +2,7 @@ interface User {
   id: number
   username: string
   role: string
+  email: string
 }
 
 const API_URL = process.env.API_URL || 'http://localhost:5000/api'
@@ -31,11 +32,7 @@ export const login = async (
       'Backend auth failed or unreachable. Trying mock fallback.',
       error
     )
-    if (username === 'admin' && password === '123456') {
-      const mockUser = { id: 1, username: 'admin', role: 'admin' }
-      localStorage.setItem(USER_KEY, JSON.stringify(mockUser))
-      return mockUser
-    }
+
     throw error
   }
 }

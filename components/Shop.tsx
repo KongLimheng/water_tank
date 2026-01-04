@@ -1,34 +1,77 @@
+import { Category } from '@prisma/client'
 import { Loader2 } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Product, ProductVariant } from '../types'
+import { getCategoryByBrand } from '../services/categoryService'
+import { getProductsByBrandCategory } from '../services/productService'
+import { ProductList } from '../types'
 import Hero from './Hero'
 import ProductCard from './ProductCard'
 import ProductDetailsModal from './ProductDetailsModal'
 
 interface ShopProps {
-  products: Product[]
+  products: ProductList[]
   isLoading: boolean
-  onAddToCart: (product: Product, variant?: ProductVariant) => void
+  // onAddToCart: (product: Product, variant?: ProductVariant) => void
 }
 
-const Shop: React.FC<ShopProps> = ({ products, isLoading, onAddToCart }) => {
+const Shop: React.FC<ShopProps> = ({ products, isLoading }) => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<ProductList | null>(
+    null
+  )
+  const [isCatsLoading, setIsCatsLoading] = useState(true)
 
-  const brandParam = searchParams.get('brand') || 'all'
-  const categoryParam = searchParams.get('category') || 'all'
+  const [categories, setCategories] = useState<Category[]>([])
+  const brandParam = searchParams.get('brand')?.toLowerCase() || 'all'
+  const categoryParam = searchParams.get('category')?.toLowerCase() || 'all'
 
-  const filteredProducts = products.filter((p) => {
-    const matchBrand = brandParam === 'all' || p.brand === brandParam
-    const matchCategory =
-      categoryParam === 'all' || p.category === categoryParam
-    return matchBrand && matchCategory
-  })
+  const activeBrand = searchParams.get('brand')?.toLocaleLowerCase() || 'all'
+  const activeCategory =
+    searchParams.get('category')?.toLocaleLowerCase() || 'all'
+
+  const [productFilter, setProductFilter] = useState<ProductList[] | null>(null)
+
+  const handleCategoryChange = (category: string) => {
+    setSearchParams({ brand: activeBrand, category })
+  }
+
+  // Filter Categories based on selected Brand
+  const availableCategories = categories
+
+  const filteredProducts =
+    activeBrand === 'all' && categoryParam === 'all'
+      ? products
+      : productFilter || []
 
   const handleClearFilters = () => {
     setSearchParams({})
   }
+
+  // Load categories on mount
+  useEffect(() => {
+    const fetchCats = async () => {
+      try {
+        const data = await getCategoryByBrand(activeBrand)
+
+        setCategories(data)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setIsCatsLoading(false)
+      }
+    }
+    if (activeBrand !== 'all') fetchCats()
+  }, [activeBrand])
+
+  useEffect(() => {
+    const fetchProFilter = async () => {
+      const data = await getProductsByBrandCategory(brandParam, categoryParam)
+      setProductFilter(data)
+    }
+    // Reset selected product when filters change
+    if (activeBrand !== 'all') fetchProFilter()
+  }, [activeBrand, activeCategory])
 
   return (
     <>
@@ -42,7 +85,7 @@ const Shop: React.FC<ShopProps> = ({ products, isLoading, onAddToCart }) => {
               {brandParam !== 'all' && (
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    brandParam === 'Grown'
+                    brandParam === 'grown'
                       ? 'bg-green-100 text-green-700'
                       : 'bg-blue-100 text-blue-700'
                   }`}
@@ -55,17 +98,14 @@ const Shop: React.FC<ShopProps> = ({ products, isLoading, onAddToCart }) => {
               {categoryParam === 'all'
                 ? brandParam === 'all'
                   ? 'Featured Products'
-                  : `All ${brandParam} Products`
-                : categoryParam.charAt(0).toUpperCase() +
-                  categoryParam.slice(1)}
+                  : `All ${
+                      brandParam.charAt(0).toUpperCase() + brandParam.slice(1)
+                    } Products`
+                : availableCategories.find((c) => c.slug === activeCategory)
+                    ?.displayName ||
+                  availableCategories.find((c) => c.slug === activeCategory)
+                    ?.name}
             </h2>
-            <p className="text-slate-500 mt-2">
-              {brandParam === 'Grown'
-                ? 'Pure hydration for your daily life.'
-                : brandParam === 'Diamond'
-                ? 'Premium equipment and bulk solutions.'
-                : 'Premium hydration solutions for every need.'}
-            </p>
           </div>
           <div className="text-sm text-slate-400 font-medium">
             {isLoading
@@ -74,17 +114,61 @@ const Shop: React.FC<ShopProps> = ({ products, isLoading, onAddToCart }) => {
           </div>
         </div>
 
+        {/* --- CATEGORY TABS --- */}
+        {activeBrand !== 'all' && (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
+            <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleCategoryChange('all')}
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    activeCategory === 'all'
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  All Categories
+                </button>
+                {isCatsLoading ? (
+                  <div className="px-4 py-2 text-sm text-slate-400 flex items-center gap-2">
+                    <Loader2 size={14} className="animate-spin" /> Loading...
+                  </div>
+                ) : (
+                  availableCategories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategoryChange(cat.slug)}
+                      className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap ${
+                        activeCategory === cat.slug
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {cat.displayName || cat.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="text-sm text-slate-400 font-medium whitespace-nowrap flex-shrink-0">
+              {isLoading
+                ? 'Updating...'
+                : `${filteredProducts.length} Products`}
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 size={48} className="text-primary-600 animate-spin" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                onAdd={(p) => onAddToCart(p)}
                 onClick={setSelectedProduct}
               />
             ))}
@@ -187,7 +271,6 @@ const Shop: React.FC<ShopProps> = ({ products, isLoading, onAddToCart }) => {
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={(p, v) => {
-          onAddToCart(p, v)
           setSelectedProduct(null)
         }}
       />

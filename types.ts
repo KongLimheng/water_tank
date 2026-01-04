@@ -27,6 +27,39 @@ export interface Product {
   variants?: ProductVariant[]
 }
 
+export interface ProductList {
+  brand: string
+  id: number
+  name: string
+  slug: string
+  description: string
+  price: number
+  image: string[]
+  volume: string
+  categoryId: number
+  createdAt: Date
+  updatedAt: Date
+  category: {
+    brand: string
+    id: number
+    name: string
+    slug: string
+    createdAt: Date
+    displayName: string
+  }
+  variants: {
+    id: number
+    name: string
+    price: number
+    image: string
+    createdAt: Date
+    updatedAt: Date
+    stock: number
+    sku: string
+    productId: number
+  }[]
+}
+
 export interface CartItem extends Product {
   quantity: number
   selectedVariantId?: number

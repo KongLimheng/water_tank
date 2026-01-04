@@ -16,7 +16,7 @@ const LoginView: React.FC = () => {
     setIsLoading(true)
     try {
       const user = await login(username, password)
-      if (user.role === 'admin') {
+      if (user.role.toLowerCase() === 'admin') {
         navigate('/admin')
       } else {
         setError('Access denied: Admins only')

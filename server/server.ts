@@ -1,199 +1,62 @@
-import bcrypt from 'bcryptjs'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import cors from 'cors'
 import 'dotenv/config'
 import express from 'express'
-import { prisma } from './lib/prismaClient'
+import fs from 'fs/promises'
+import path from 'path'
+import slugify from 'slugify'
+import { fileURLToPath } from 'url'
+import AppError from './lib/AppError.js'
+import globalError from './lib/globalError.js'
+import { asyncHandler, comparePassword } from './lib/password.js'
+import { prisma } from './lib/prismaClient.js'
+import upload from './lib/upload.js'
+
+// ES Modules fix for __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 const port = process.env.PORT || 5000
+
+// ⚡ SERVE STATIC FILES FROM VITE BUILD
+const staticPath = path.join(__dirname, '..', 'uploads')
+app.use('/uploads', express.static(staticPath))
 
 // Middleware
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
-// --- Initialization & Seeding ---
-const SEED_PRODUCTS = [
-  {
-    name: 'Pure Life Pack',
-    description: 'Compact hydration options for events and meetings.',
-    price: 5.5,
-    image: 'https://picsum.photos/id/10/400/400',
-    category: 'bottles',
-    volume: 'Various Sizes',
-    variants: [
-      {
-        name: '330ml x 24',
-        price: 5.5,
-        stock: 100,
-        image: 'https://picsum.photos/id/10/400/400',
-      },
-      {
-        name: '500ml x 24',
-        price: 6.0,
-        stock: 85,
-        image: 'https://picsum.photos/id/11/400/400',
-      },
-    ],
-  },
-  {
-    name: 'Family Size Pack',
-    description: 'Ideal for home dining and sharing.',
-    price: 7.2,
-    image: 'https://picsum.photos/id/12/400/400',
-    category: 'bottles',
-    volume: '1.5L x 12',
-    variants: [{ name: '1.5L x 12', price: 7.2, stock: 50, image: null }],
-  },
-  {
-    name: 'Vertical Water Tank (Type A)',
-    description: 'High durability stainless steel water tank. Type A Series.',
-    price: 68.0,
-    image: 'https://picsum.photos/id/13/400/400',
-    category: 'accessories',
-    volume: '100L - 2500L',
-    variants: [
-      {
-        name: '500L (0.66m x 1.62m)',
-        price: 68.0,
-        stock: 10,
-        image: 'https://picsum.photos/id/13/400/400',
-      },
-      {
-        name: '1000L (0.80m x 2.01m)',
-        price: 100.0,
-        stock: 5,
-        image: 'https://picsum.photos/id/14/400/400',
-      },
-      {
-        name: '2000L (1.00m x 2.25m)',
-        price: 170.0,
-        stock: 2,
-        image: 'https://picsum.photos/id/15/400/400',
-      },
-    ],
-  },
-  {
-    name: 'Premium Hot & Cold Dispenser',
-    description:
-      'Instant access to piping hot or ice-cold water. Energy efficient compressor.',
-    price: 145.0,
-    image: 'https://picsum.photos/id/20/400/400',
-    category: 'dispensers',
-    volume: null,
-    variants: [
-      {
-        name: 'Standard White',
-        price: 145.0,
-        stock: 20,
-        image: 'https://picsum.photos/id/20/400/400',
-      },
-      {
-        name: 'Matte Black',
-        price: 155.0,
-        stock: 15,
-        image: 'https://picsum.photos/id/24/400/400',
-      },
-    ],
-  },
-  {
-    name: 'Ceramic Countertop Dispenser',
-    description:
-      'Elegant ceramic pot for room temperature dispensing. Includes wooden stand.',
-    price: 25.0,
-    image: 'https://picsum.photos/id/21/400/400',
-    category: 'dispensers',
-    volume: null,
-    variants: [{ name: 'Standard', price: 25.0, stock: 40, image: null }],
-  },
-  {
-    name: 'Manual Pump',
-    description:
-      'Simple, portable hand pump for 18.9L bottles. Great for camping.',
-    price: 5.0,
-    image: 'https://picsum.photos/id/22/400/400',
-    category: 'accessories',
-    volume: null,
-    variants: [{ name: 'Standard', price: 5.0, stock: 200, image: null }],
-  },
-]
-
-// const initDb = async () => {
-//   try {
-//     // First, try a simple query to check connection
-//     await prisma.$connect()
-//     console.log('Database connected successfully')
-
-//     const productCount = await prisma.product.count()
-
-//     if (productCount === 0) {
-//       console.log('Database empty. Seeding products...')
-//       for (const p of SEED_PRODUCTS) {
-//         await prisma.product.create({
-//           data: {
-//             name: p.name,
-//             description: p.description,
-//             price: p.price,
-//             image: p.image,
-//             category: p.category,
-//             volume: p.volume,
-//             variants: {
-//               create: p.variants.map((v) => ({
-//                 name: v.name,
-//                 price: v.price,
-//                 stock: v.stock,
-//                 image: v.image,
-//               })),
-//             },
-//           },
-//         })
-//       }
-//       console.log('Product seeding complete.')
-//     }
-
-//     // Seed Admin User
-//     const adminUser = await prisma.user.findUnique({
-//       where: { username: 'admin' },
-//     })
-
-//     if (!adminUser) {
-//       const hashedPassword = await bcrypt.hash('123456', 10)
-//       await prisma.user.create({
-//         data: {
-//           username: 'admin',
-//           password: hashedPassword,
-//           role: 'admin',
-//         },
-//       })
-//       console.log('Admin user seeded (admin/123456).')
-//     }
-//   } catch (err) {
-//     console.error('Database initialization failed:', err)
-//   }
-// }
+app.set('trust proxy', 1)
 // --- API Routes ---
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    mode: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+  })
+})
 
 // Login
 app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body
+  const { email, password } = req.body
   try {
-    const user = await prisma.user.findUnique({
-      where: { username },
+    const user = await prisma.user.findFirst({
+      where: { email },
     })
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    const isMatch = await bcrypt.compare(password, user.password)
+    const isPasswordValid = await comparePassword(password, user.password)
 
-    if (isMatch) {
-      res.json({
-        user: { id: user.id, username: user.username, role: user.role },
-      })
-    } else {
-      res.status(401).json({ error: 'Invalid credentials' })
+    if (!isPasswordValid) {
+      res.status(400).json({ error: 'Email or password is incorrect.' })
     }
+
+    res.json({ user: { id: user.id, email: user.email, role: user.role } })
   } catch (e) {
     console.error('Login error:', e)
     res.status(500).json({ error: 'Internal server error' })
@@ -234,26 +97,74 @@ app.get('/api/products/:id', async (req, res) => {
   }
 })
 
-// CREATE Product
-app.post('/api/products', async (req, res) => {
+//Get products by brand and category
+app.get('/api/products/:brand/:category', async (req, res) => {
   try {
-    const { name, description, price, image, categoryId, volume, variants } =
+    const { brand, category } = req.params
+    const products = await prisma.product.findMany({
+      where: {
+        category: {
+          brand,
+          slug: category !== 'all' ? category : undefined,
+        },
+      },
+      include: { variants: true, category: true },
+      orderBy: { id: 'desc' },
+    })
+    res.json(products)
+  } catch (err) {
+    console.error('Error fetching products by brand and category:', err)
+    res.status(500).json({ error: 'Failed to fetch products' })
+  }
+})
+
+// CREATE Product
+app.post('/api/products', upload.any(), async (req, res) => {
+  try {
+    const { name, description, price, categoryId, volume, variants, brand } =
       req.body
 
-    if (!name || price === undefined) {
+    if (!name) {
       return res.status(400).json({ msg: 'Name and Price are required' })
+    }
+
+    let parsedVariants: any[] = []
+
+    try {
+      parsedVariants = variants ? JSON.parse(variants) : []
+    } catch {
+      throw new AppError(400, 'Invalid variants JSON format')
+    }
+    const files = (req.files as Express.Multer.File[]) || []
+    const baseUrl = `${req.protocol}://${req.get('host')}`
+    // Handle Images
+    let mainImage = ''
+    let galleryPaths: string[] = []
+    let existingImage = req.body.existingImage
+
+    if (files && files.length > 0) {
+      // Construct full URLs
+      const fileUrls = files.map(
+        (f) => `${baseUrl}/uploads/products/${f.filename}`
+      )
+      mainImage = fileUrls[0]
+      galleryPaths = fileUrls
+    } else if (existingImage) {
+      mainImage = existingImage
     }
 
     const newProduct = await prisma.product.create({
       data: {
         name,
+        slug: name.toLowerCase().replace(/\s+/g, '_') + `_${Date.now()}`,
         description: description || '',
         price: parseFloat(price),
-        image: image || '',
-        categoryId: categoryId,
+        brand,
+        image: galleryPaths,
+        categoryId: parseInt(categoryId),
         volume: volume || null,
         variants: {
-          create: (variants || []).map((v) => ({
+          create: parsedVariants.map((v: any) => ({
             name: v.name,
             price: parseFloat(v.price),
             stock: parseInt(v.stock) || 0,
@@ -273,19 +184,47 @@ app.post('/api/products', async (req, res) => {
 })
 
 // UPDATE Product
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', upload.array('images', 10), async (req, res) => {
   try {
     const { id } = req.params
     const {
       name,
       description,
       price,
-      image,
-      category,
       volume,
       variants,
       brand,
+      categoryId,
+      existingGallery,
     } = req.body
+    const files = (req.files as Express.Multer.File[]) || []
+    const baseUrl = `${req.protocol}://${req.get('host')}`
+    let galleryPaths: string[] = []
+
+    if (files && files.length > 0) {
+      // Construct full URLs
+      const fileUrls = files.map(
+        (f) => `${baseUrl}/uploads/products/${f.filename}`
+      )
+      galleryPaths = fileUrls
+    }
+
+    let existingImage: string[] = []
+    try {
+      existingImage = existingGallery ? JSON.parse(existingGallery) : []
+    } catch {
+      throw new AppError(400, 'Invalid existingGallery JSON format')
+    }
+
+    const combineImage = [...existingImage, ...galleryPaths]
+
+    let parsedVariants: any[] = []
+
+    try {
+      parsedVariants = variants ? JSON.parse(variants) : []
+    } catch {
+      throw new AppError(400, 'Invalid variants JSON format')
+    }
 
     const updatedProduct = await prisma.product.update({
       where: { id: Number(id) },
@@ -293,14 +232,13 @@ app.put('/api/products/:id', async (req, res) => {
         name,
         description,
         price: parseFloat(price),
-        image,
-        category,
+        categoryId: parseInt(categoryId),
         volume,
         brand,
+        image: combineImage,
         variants: {
-          // Transactionally delete old variants and create new ones
           deleteMany: {},
-          create: (variants || []).map((v) => ({
+          create: parsedVariants.map((v: any) => ({
             name: v.name,
             price: parseFloat(v.price),
             stock: parseInt(v.stock) || 0,
@@ -315,7 +253,7 @@ app.put('/api/products/:id', async (req, res) => {
     res.json(updatedProduct)
   } catch (err) {
     console.error('Error updating product:', err)
-    if (err.code === 'P2025') {
+    if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
       return res.status(404).json({ msg: 'Product not found' })
     }
     res.status(500).json({ error: 'Failed to update product' })
@@ -326,6 +264,47 @@ app.put('/api/products/:id', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params
+
+    const product = await prisma.product.findUnique({
+      where: { id: Number(id) },
+      include: {
+        variants: true, // Include variants if they also have images
+      },
+    })
+
+    if (!product) {
+      return res.status(404).json({ msg: 'Product not found' })
+    }
+
+    // Delete associated images from upload folder
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'products')
+
+    if (product.image && Array.isArray(product.image)) {
+      for (const imageUrl of product.image) {
+        try {
+          // Extract filename from URL
+          const urlParts = imageUrl.split('/')
+          const filename = urlParts[urlParts.length - 1]
+
+          // Build the full file path
+          const filePath = path.join(uploadDir, filename)
+
+          // Check if file exists and delete it
+          try {
+            await fs.access(filePath)
+            await fs.unlink(filePath)
+            console.log(`Deleted image: ${filename}`)
+          } catch (fsErr) {
+            // File doesn't exist, skip it
+            console.log(`Image not found: ${filename}`)
+          }
+        } catch (imgErr) {
+          console.error(`Error deleting image ${imageUrl}:`, imgErr)
+          // Continue with other images even if one fails
+        }
+      }
+    }
+
     await prisma.product.delete({
       where: { id: Number(id) },
     })
@@ -333,7 +312,7 @@ app.delete('/api/products/:id', async (req, res) => {
     res.json({ msg: 'Product deleted' })
   } catch (err) {
     console.error('Error deleting product:', err)
-    if (err.code === 'P2025') {
+    if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
       return res.status(404).json({ msg: 'Product not found' })
     }
     res.status(500).json({ error: 'Failed to delete product' })
@@ -380,7 +359,7 @@ app.delete('/api/videos/:id', async (req, res) => {
     res.json({ msg: 'Video deleted' })
   } catch (err) {
     console.error('Error deleting video:', err)
-    if (err.code === 'P2025') {
+    if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
       return res.status(404).json({ msg: 'Video not found' })
     }
     res.status(500).json({ error: 'Failed to delete video' })
@@ -390,9 +369,12 @@ app.delete('/api/videos/:id', async (req, res) => {
 // --- Categories ---
 app.get('/api/categories', async (req, res) => {
   try {
+    const { brand } = req.query
     const categories = await prisma.category.findMany({
+      where: brand ? { brand: String(brand) } : undefined,
       orderBy: { createdAt: 'desc' },
     })
+
     res.json(categories)
   } catch (err) {
     console.error(err)
@@ -400,24 +382,87 @@ app.get('/api/categories', async (req, res) => {
   }
 })
 
-app.post('/api/categories', async (req, res) => {
-  try {
+app.post(
+  '/api/categories',
+  asyncHandler(async (req, res) => {
     const { name, brand, displayName } = req.body
-    if (!name) return res.status(400).json({ msg: 'Name is required' })
+    const slug = `${brand.toLowerCase().replace(/\s+/g, '_')}_${slugify(name, {
+      lower: true,
+      replacement: '_',
+    })}`
 
+    const existingCategory = await prisma.category.findUnique({
+      where: { slug },
+    })
+    if (existingCategory) {
+      throw new AppError(400, 'Category with this name already exists')
+    }
     const newCat = await prisma.category.create({
-      data: { name, brand: brand || null, displayName: displayName || null },
+      data: {
+        name,
+        slug,
+        brand: brand.toLowerCase() || null,
+        displayName: displayName || null,
+      },
     })
     res.json(newCat)
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'Failed to create category' })
-  }
-})
+  })
+)
+
+app.put(
+  '/api/categories/:id',
+  asyncHandler(async (req, res) => {
+    try {
+      const { id } = req.params
+      const { name, brand, displayName } = req.body
+
+      const catExist = await prisma.category.findUnique({
+        where: { id: Number(id) },
+      })
+
+      if (!catExist) {
+        throw new AppError(404, 'Category not found')
+      }
+
+      const slug = `${brand.toLowerCase().replace(/\s+/g, '_')}_${slugify(
+        name,
+        {
+          lower: true,
+          replacement: '_',
+        }
+      )}`
+      if (slug !== catExist.slug) {
+        const existingCategory = await prisma.category.findUnique({
+          where: { slug },
+        })
+        if (existingCategory) {
+          throw new AppError(400, 'Category with this name already exists')
+        }
+      }
+
+      const updatedCategory = await prisma.category.update({
+        where: { id: Number(id) },
+        data: {
+          name,
+          slug,
+          brand: brand || null,
+          displayName: displayName || null,
+        },
+      })
+      res.json(updatedCategory)
+    } catch (err) {
+      console.error(err)
+      res.status(500).json({ error: 'Failed to fetch categories' })
+    }
+  })
+)
 
 app.delete('/api/categories/:id', async (req, res) => {
   try {
     const { id } = req.params
+    await prisma.category.delete({
+      where: { id: Number(id) },
+    })
     res.json({ msg: 'Category deleted' })
   } catch (err) {
     console.error(err)
@@ -425,11 +470,25 @@ app.delete('/api/categories/:id', async (req, res) => {
   }
 })
 
-app.listen(port, () => {
-  console.log(`Server running with Prisma + PostgreSQL on port ${port}`)
+// if (process.env.NODE_ENV === 'production') {
+//   app.get(/^(?!\/api).*$/, (req, res, next) => {
+//     if (req.path.startsWith('/api/')) {
+//       return res.status(404).json({ error: 'API route not found' })
+//     }
 
-  // setTimeout(async () => {
-  //   console.log('Starting database initialization...')
-  //   await initDb()
-  // }, 1000)
+//     // Serve index.html for all other routes (SPA)
+//     res.sendFile(path.join(staticPath, 'index.html'))
+//   })
+// }
+
+app.use(globalError)
+
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`)
+  console.log(`📁 Serving static files from: ${staticPath}`)
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
+
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`✅ Production mode enabled`)
+  }
 })

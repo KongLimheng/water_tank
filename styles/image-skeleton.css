@@ -1,0 +1,36 @@
+.image-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.image-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 37%, #e5e7eb 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.image-loaded {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    filter: blur(12px);
+    opacity: 0.6;
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
