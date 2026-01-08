@@ -21,5 +21,16 @@
     "noEmit": true
   },
   "include": ["server/**/*.ts", "prisma.config.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "public",
+    "*.test.ts",
+    "*.test.tsx",
+    "*.spec.ts",
+    "*.spec.tsx",
+    "__tests__",
+    "__mocks__"
+  ]
 }

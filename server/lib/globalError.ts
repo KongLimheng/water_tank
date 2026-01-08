@@ -98,4 +98,18 @@ const globalError = async (
   })
 }
 
+export const notFoundHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const error = new Error(`Not Found - ${req.originalUrl}`)
+
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`,
+    error: 'Not Found',
+  })
+}
+
 export default globalError

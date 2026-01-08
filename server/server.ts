@@ -2,15 +2,16 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import cors from 'cors'
 import 'dotenv/config'
 import express from 'express'
+import SyncFs from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 import slugify from 'slugify'
 import { fileURLToPath } from 'url'
-import AppError from './lib/AppError.js'
-import globalError from './lib/globalError.js'
-import { asyncHandler, comparePassword } from './lib/password.js'
-import { prisma } from './lib/prismaClient.js'
-import upload from './lib/upload.js'
+import AppError from './lib/AppError'
+import globalError, { notFoundHandler } from './lib/globalError'
+import { asyncHandler, comparePassword } from './lib/password'
+import { prisma } from './lib/prismaClient'
+import upload from './lib/upload'
 
 // ES Modules fix for __dirname
 const __filename = fileURLToPath(import.meta.url)
@@ -24,7 +25,11 @@ const staticPath = path.join(__dirname, '..', 'uploads')
 app.use('/uploads', express.static(staticPath))
 
 // Middleware
-app.use(cors())
+app.use(
+  cors({
+    origin: [process.env.FRONTEND_URL || ''],
+  })
+)
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
@@ -384,17 +389,23 @@ app.get('/api/categories', async (req, res) => {
 
 app.post(
   '/api/categories',
+  upload.single('image'),
   asyncHandler(async (req, res) => {
-    const { name, brand, displayName } = req.body
+    const { name, brand, displayName, uploadType } = req.body
     const slug = `${brand.toLowerCase().replace(/\s+/g, '_')}_${slugify(name, {
       lower: true,
       replacement: '_',
     })}`
+    const baseUrl = `${req.protocol}://${req.get('host')}`
+    const imageUrl = req.file
+      ? `${baseUrl}/uploads/${uploadType}/${req.file.filename}`
+      : null
 
     const existingCategory = await prisma.category.findUnique({
       where: { slug },
     })
     if (existingCategory) {
+      if (req.file) SyncFs.unlinkSync(req.file.path)
       throw new AppError(400, 'Category with this name already exists')
     }
     const newCat = await prisma.category.create({
@@ -403,6 +414,7 @@ app.post(
         slug,
         brand: brand.toLowerCase() || null,
         displayName: displayName || null,
+        image: imageUrl,
       },
     })
     res.json(newCat)
@@ -411,49 +423,64 @@ app.post(
 
 app.put(
   '/api/categories/:id',
+  upload.single('image'),
   asyncHandler(async (req, res) => {
-    try {
-      const { id } = req.params
-      const { name, brand, displayName } = req.body
+    const { id } = req.params
+    const { name, brand, displayName, uploadType } = req.body
 
-      const catExist = await prisma.category.findUnique({
-        where: { id: Number(id) },
-      })
+    const catExist = await prisma.category.findUnique({
+      where: { id: Number(id) },
+    })
 
-      if (!catExist) {
-        throw new AppError(404, 'Category not found')
+    if (!catExist) throw new AppError(404, 'Category not found')
+    // Handle Image Update
+    const baseUrl = `${req.protocol}://${req.get('host')}`
+
+    let imageUrl = catExist.image
+
+    if (req.file) {
+      const uploadDir = path.join(__dirname, '..', 'uploads', uploadType)
+
+      // 1. Delete old image if it exists to save space
+      if (imageUrl) {
+        // Extract filename from URL
+        const urlParts = imageUrl.split('/')
+        const filename = urlParts[urlParts.length - 1]
+
+        // Build the full file path
+        const oldPath = path.join(uploadDir, filename)
+
+        if (SyncFs.existsSync(oldPath)) SyncFs.unlinkSync(oldPath)
       }
-
-      const slug = `${brand.toLowerCase().replace(/\s+/g, '_')}_${slugify(
-        name,
-        {
-          lower: true,
-          replacement: '_',
-        }
-      )}`
-      if (slug !== catExist.slug) {
-        const existingCategory = await prisma.category.findUnique({
-          where: { slug },
-        })
-        if (existingCategory) {
-          throw new AppError(400, 'Category with this name already exists')
-        }
-      }
-
-      const updatedCategory = await prisma.category.update({
-        where: { id: Number(id) },
-        data: {
-          name,
-          slug,
-          brand: brand || null,
-          displayName: displayName || null,
-        },
-      })
-      res.json(updatedCategory)
-    } catch (err) {
-      console.error(err)
-      res.status(500).json({ error: 'Failed to fetch categories' })
+      // 2. Set new image path
+      imageUrl = `${baseUrl}/uploads/${uploadType}/${req.file.filename}`
     }
+
+    const slug = `${brand.toLowerCase().replace(/\s+/g, '_')}_${slugify(name, {
+      lower: true,
+      replacement: '_',
+    })}`
+    if (slug !== catExist.slug) {
+      const existingCategory = await prisma.category.findUnique({
+        where: { slug },
+      })
+      if (existingCategory) {
+        if (req.file) SyncFs.unlinkSync(req.file.path)
+        throw new AppError(400, 'Category with this name already exists')
+      }
+    }
+
+    const updatedCategory = await prisma.category.update({
+      where: { id: Number(id) },
+      data: {
+        name,
+        slug,
+        brand: brand || null,
+        displayName: displayName || null,
+        image: imageUrl,
+      },
+    })
+    res.json(updatedCategory)
   })
 )
 
@@ -470,18 +497,22 @@ app.delete('/api/categories/:id', async (req, res) => {
   }
 })
 
-// if (process.env.NODE_ENV === 'production') {
-//   app.get(/^(?!\/api).*$/, (req, res, next) => {
-//     if (req.path.startsWith('/api/')) {
-//       return res.status(404).json({ error: 'API route not found' })
-//     }
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../dist')
+  app.use(express.static(frontendPath))
 
-//     // Serve index.html for all other routes (SPA)
-//     res.sendFile(path.join(staticPath, 'index.html'))
-//   })
-// }
+  app.get(/^(?!\/api).*$/, (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return next()
+    }
+
+    // Serve index.html for all other routes (SPA)
+    res.sendFile(path.join(frontendPath, 'index.html'))
+  })
+}
 
 app.use(globalError)
+app.use(notFoundHandler)
 
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`)

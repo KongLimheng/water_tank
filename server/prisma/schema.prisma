@@ -71,6 +71,7 @@ model Category {
   displayName String?
   brand     String
   products  Product[]
+  image String?
 
   @@index([name, slug, brand])
 

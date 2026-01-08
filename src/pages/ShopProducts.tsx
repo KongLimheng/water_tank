@@ -1,0 +1,89 @@
+import { useQuery } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import ProductCard from '../components/ProductCard'
+import ProductDetailsModal from '../components/ProductDetailsModal'
+import { getProductsByBrandCategory } from '../services/productService'
+import { ProductList } from '../types'
+
+const ShopProducts = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeBrand = (searchParams.get('brand') || 'all').toLowerCase()
+  const activeCategory = (searchParams.get('category') || 'all').toLowerCase()
+  const isFiltering = activeBrand !== 'all'
+  const [selectedProduct, setSelectedProduct] = useState<ProductList | null>(
+    null
+  )
+  const router = useNavigate()
+
+  const { data: fetchedProducts, isLoading: isQueryLoading } = useQuery({
+    queryKey: ['products', activeBrand, activeCategory],
+    queryFn: () => getProductsByBrandCategory(activeBrand, activeCategory),
+    enabled: isFiltering,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    placeholderData: (previousData) => previousData,
+  })
+
+  const visibleProducts = fetchedProducts || []
+  const isGridLoading = isQueryLoading
+
+  const handleClearFilters = () => router('/products')
+  return (
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h2 className="text-3xl font-bold text-slate-900">
+            {`All ${
+              activeBrand.charAt(0).toUpperCase() + activeBrand.slice(1)
+            } Products`}
+          </h2>
+          <div className="text-sm text-slate-400 font-medium">
+            {`Showing ${visibleProducts.length} results`}
+          </div>
+        </div>
+        {/* Product Grid */}
+        {isGridLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 size={48} className="text-primary-600 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {visibleProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={setSelectedProduct}
+              />
+            ))}
+
+            {visibleProducts.length === 0 && (
+              <div className="col-span-full py-20 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
+                <p className="text-lg">No products found in this category.</p>
+                <button
+                  onClick={handleClearFilters}
+                  className="mt-4 text-primary-600 font-bold hover:underline"
+                >
+                  View All Products
+                </button>
+              </div>
+            )}
+          </div>
+
+          // <PriceListView
+          //   products={visibleProducts}
+          //   onProductClick={setSelectedProduct}
+          // />
+        )}
+      </div>
+
+      <ProductDetailsModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={() => setSelectedProduct(null)}
+      />
+    </>
+  )
+}
+
+export default ShopProducts

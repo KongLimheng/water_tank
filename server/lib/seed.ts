@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { prisma } from './prismaClient.ts'
+import { prisma } from './prismaClient'
 // Products with their default variants
 const productsWithVariants = [
   // Category: Makeup
