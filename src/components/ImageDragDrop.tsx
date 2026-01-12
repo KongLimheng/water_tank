@@ -115,7 +115,7 @@ const ImageDragDrop = ({
               >
                 <img
                   src={url}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-fill"
                   alt="preview"
                   loading="lazy"
                 />

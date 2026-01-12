@@ -10,6 +10,6 @@
     "strict": true,
     "noEmit": false
   },
-  "include": ["server/server.ts", "server/lib/**/*.ts"],
+  "include": ["server/**/*"],
   "exclude": ["node_modules"]
 }

@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
+    "target": "ES2020",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "types": ["node"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowJs": true,
@@ -20,7 +20,7 @@
     // "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["server/**/*.ts", "prisma.config.ts"],
+  "include": ["src/**/*", "prisma.config.ts"],
   "exclude": [
     "node_modules",
     "dist",

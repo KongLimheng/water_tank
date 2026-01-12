@@ -49,7 +49,6 @@ const Shop: React.FC<ShopProps> = ({
     placeholderData: (previousData) => previousData, // Keep showing old data while fetching new (smoother UX)
   })
 
-  // 4. Determine Display Data
   const visibleProducts = isFiltering ? fetchedProducts || [] : initialProducts
   const isGridLoading = isFiltering ? isQueryLoading : initialLoading
 
@@ -64,7 +63,6 @@ const Shop: React.FC<ShopProps> = ({
 
   const handleClearFilters = () => setSearchParams({})
 
-  // Helper for title logic
   const getPageTitle = () => {
     if (activeCategory === 'all') {
       return activeBrand === 'all'
@@ -108,30 +106,6 @@ const Shop: React.FC<ShopProps> = ({
               : `Showing ${visibleProducts.length} results`}
           </div>
         </div>
-
-        {/* View Switcher */}
-        {/* <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-md transition ${
-              viewMode === 'grid'
-                ? 'bg-white shadow text-blue-600'
-                : 'text-slate-500'
-            }`}
-          >
-            <Grid size={20} />
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`p-2 rounded-md transition ${
-              viewMode === 'table'
-                ? 'bg-white shadow text-blue-600'
-                : 'text-slate-500'
-            }`}
-          >
-            <List size={20} />
-          </button>
-        </div> */}
 
         {/* Category Tabs */}
         {isFiltering && (

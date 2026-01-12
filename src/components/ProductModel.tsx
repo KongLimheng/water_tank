@@ -16,6 +16,11 @@ interface ProductFormValues {
   categoryId: string // Use string for select value
   volume: string
   image?: string[] // URL string
+  type?: string
+  diameter?: string
+  height?: string
+  group: string
+  length?: string
   variants: {
     name: string
     price: number
@@ -42,13 +47,14 @@ export const ProductModal: React.FC<{
     control,
     handleSubmit,
     reset,
-    setValue,
     watch,
+    setValue,
+    clearErrors,
     formState: { errors },
   } = useForm<ProductFormValues>({
     defaultValues: {
       brand: 'Grown',
-      variants: [{ name: 'Standard', price: 0, stock: 100 }],
+      variants: [{ name: 'Standard', price: 0, stock: 1 }],
     },
   })
 
@@ -57,19 +63,44 @@ export const ProductModal: React.FC<{
     name: 'variants',
   })
 
+  const watchedBrand = watch('brand')
+  const watchedType = watch('type')
+
+  const availableCategories = useMemo(() => {
+    if (!categories) return []
+    const targetBrand = (watchedBrand || '').toLowerCase()
+
+    // Filter categories by the selected brand
+    const filtered = categories.filter(
+      (c) => (c.brand || '').toLowerCase() === targetBrand
+    )
+
+    if (product && (product.category || product.categoryId)) {
+      const alreadyInList = filtered.find((c) => c.id === product.category.id)
+      if (!alreadyInList) {
+        filtered.push(product.category)
+      }
+    }
+
+    return filtered
+  }, [categories, watchedBrand, product, isOpen])
+
   useEffect(() => {
     if (isOpen) {
       if (product) {
-        console.log('editmode')
-        // Edit Mode
         reset({
           name: product.name,
           brand: product.brand || '',
           description: product.description || undefined,
           price: product.price,
-          categoryId: product.category.id.toString(),
-          volume: product.volume || undefined,
+          categoryId: product.category?.id ? String(product.category.id) : '',
+          volume: product.volume || '',
           image: product.image,
+          diameter: product.diameter || '',
+          type: product.type,
+          height: product.height,
+          group: product.group,
+          length: product.length || '',
           variants:
             product.variants && product.variants.length > 0
               ? product.variants
@@ -77,7 +108,6 @@ export const ProductModal: React.FC<{
         })
         setPreviewUrls(product.image ?? [])
       } else {
-        // Add Mode
         reset({
           name: '',
           description: '',
@@ -86,7 +116,6 @@ export const ProductModal: React.FC<{
           volume: '',
           categoryId: '',
           image: [],
-          variants: [{ name: 'Standard', price: 0, stock: 1 }],
         })
         setPreviewUrls([])
       }
@@ -152,6 +181,11 @@ export const ProductModal: React.FC<{
 
     formData.append('brand', data.brand)
     formData.append('volume', data.volume || '')
+    formData.append('height', data.height!)
+    formData.append('diameter', data.diameter!)
+    formData.append('type', data.type!)
+    formData.append('group', data.group)
+    formData.append('length', data.length || '')
 
     // Category Logic
     let catId = data.categoryId
@@ -196,14 +230,6 @@ export const ProductModal: React.FC<{
     }
   }
 
-  const availableCategories = useMemo(() => {
-    if (!categories) return []
-    const currentBrand = (watch('brand') || '').toLowerCase()
-
-    return categories.filter(
-      (c) => (c.brand || '').toLowerCase() === currentBrand
-    )
-  }, [categories, watch('brand')])
   if (!isOpen) return null
 
   return (
@@ -230,7 +256,7 @@ export const ProductModal: React.FC<{
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Product Name
+                  Product Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   {...register('name', { required: 'Name is required' })}
@@ -246,7 +272,7 @@ export const ProductModal: React.FC<{
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Subtitle
+                  Volume (ចំណុះ)
                 </label>
                 <input
                   {...register('volume')}
@@ -289,6 +315,117 @@ export const ProductModal: React.FC<{
                 )}
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Group
+                </label>
+                <select
+                  {...register('group')}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+                >
+                  <option value="">Select Group</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Product Type{' '}
+                  {watch('group') && <span className="text-red-500">*</span>}
+                </label>
+                <select
+                  {...register('type', {
+                    required: watch('group')
+                      ? 'Product Type is required'
+                      : false,
+                    onChange: (e) => {
+                      const value = e.target.value
+                      if (value === 'vertical') {
+                        setValue('length', '')
+                        clearErrors('length')
+                      }
+                    },
+                  })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+                >
+                  <option value="">Select Type</option>
+                  <option value="vertical">Vertical</option>
+                  <option value="horizontal">Horizontal</option>
+                </select>
+
+                {errors.type && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.type.message}
+                  </p>
+                )}
+              </div>
+              <div
+                className={`grid md:grid-cols-${
+                  watchedType === 'horizontal' ? '3' : '2'
+                } grid-cols-1 col-span-2 gap-2`}
+              >
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Diameter (ទទឹងមាត់) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    {...register('diameter', {
+                      required: 'Diameter is required',
+                    })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                    placeholder="e.g. 0.5M"
+                  />
+                  {errors.diameter && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.diameter.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Height (កំពស់) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    {...register('height', { required: 'Height is required' })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                    placeholder="e.g. 10M"
+                  />
+                  {errors.height && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.height.message}
+                    </p>
+                  )}
+                </div>
+
+                {watchedType === 'horizontal' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Length (បណ្ដោយ){' '}
+                      {watchedType === 'horizontal' && (
+                        <span className="text-red-500">*</span>
+                      )}
+                    </label>
+                    <input
+                      {...register('length', {
+                        required:
+                          watchedType === 'horizontal'
+                            ? 'Length is required'
+                            : false,
+                      })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                      placeholder="e.g. 10M"
+                    />
+                    {errors.length && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.length.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Description
@@ -302,73 +439,6 @@ export const ProductModal: React.FC<{
               </div>
             </div>
           </div>
-
-          {/* Images */}
-          {/* <div className="space-y-4">
-            <div
-              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                dragActive
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-slate-300 hover:bg-slate-50'
-              }`}
-              onDragEnter={(e) => {
-                e.preventDefault()
-                setDragActive(true)
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault()
-                setDragActive(false)
-              }}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault()
-                setDragActive(false)
-                if (e.dataTransfer.files)
-                  handleFilesSelected(e.dataTransfer.files)
-              }}
-            >
-              <input
-                type="file"
-                id="img-upload"
-                className="hidden"
-                multiple
-                accept="image/*"
-                onChange={(e) => handleFilesSelected(e.target.files)}
-              />
-              <label
-                htmlFor="img-upload"
-                className="cursor-pointer flex flex-col items-center"
-              >
-                <UploadCloud className="text-slate-400 mb-2" size={32} />
-                <p className="text-sm text-slate-600 font-medium">
-                  Click to upload or drag & drop
-                </p>
-              </label>
-            </div>
-            {previewUrls.length > 0 && (
-              <div className="flex flex-wrap gap-3">
-                {previewUrls.map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative w-20 h-20 rounded-lg overflow-hidden group border border-slate-200"
-                  >
-                    <img
-                      src={url}
-                      className="w-full h-full object-cover"
-                      alt="preview"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 className="text-white" size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div> */}
 
           <ImageDragDrop
             handleFilesSelected={handleFilesSelected}

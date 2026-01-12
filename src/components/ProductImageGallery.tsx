@@ -145,6 +145,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             src={selectedImage}
             alt={name}
             loading="lazy"
+            decoding="async"
             onLoad={() => setImageLoaded(true)}
             className={`transition-transform duration-300 max-h-[500px] ${
               isZoomed ? 'scale-150' : 'scale-100'

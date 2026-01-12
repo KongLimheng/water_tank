@@ -1,4 +1,3 @@
-import { QueryClient } from '@tanstack/react-query'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
@@ -10,14 +9,7 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement)
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false, // Prevent re-fetching when clicking between windows
-      staleTime: 1000 * 60 * 5, // Data is fresh for 5 minutes
-    },
-  },
-})
+
 root.render(
   <React.StrictMode>
     <BrowserRouter

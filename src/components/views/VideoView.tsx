@@ -1,13 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { Edit, Plus, Save, Trash2, X } from 'lucide-react'
 import React, { useState } from 'react'
-import { toast } from 'react-toastify'
-import {
-  createVideo,
-  deleteVideo,
-  getVideos,
-  updateVideo,
-} from '../../services/videoService'
+import { useVideoMutations } from '../../hooks/useVideoMutations'
+import { getVideos } from '../../services/videoService'
 import { Video } from '../../types'
 
 export const VideoView = () => {
@@ -19,15 +14,11 @@ export const VideoView = () => {
     queryFn: getVideos,
   })
 
+  const { deleteVideo, isDeleting } = useVideoMutations()
+
   const handleDelete = async (id: number) => {
     if (window.confirm('Delete this video?')) {
-      try {
-        await deleteVideo(id)
-
-        toast.success('Video deleted')
-      } catch {
-        toast.error('Failed to delete')
-      }
+      deleteVideo(id)
     }
   }
 
@@ -80,6 +71,7 @@ export const VideoView = () => {
                       <Edit size={16} />
                     </button>
                     <button
+                      disabled={isDeleting}
                       onClick={() => handleDelete(video.id)}
                       className="p-2 text-slate-400 hover:text-red-600"
                     >
@@ -112,38 +104,31 @@ const VideoFormModal = ({ isOpen, onClose, video, onSuccess }: any) => {
     description: video?.description || '',
     videoUrl: video?.videoUrl || '',
   })
-  const [loading, setLoading] = useState(false)
+  const { addVideo, updateVideo, isSaving } = useVideoMutations()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    try {
-      // Embed logic
-      let embedUrl = formData.videoUrl.trim()
-      const regExp =
-        /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
-      const match = embedUrl.match(regExp)
-      if (match && match[2].length === 11) {
-        embedUrl = `https://www.youtube.com/embed/${match[2]}`
-      }
-
-      const payload = {
-        ...formData,
-        videoUrl: embedUrl,
-        date: new Date().toISOString(),
-      }
-
-      if (video) await updateVideo({ ...payload, id: video.id, thumbnail: '' })
-      else await createVideo({ ...payload, thumbnail: '' })
-
-      toast.success('Video saved')
-      onSuccess()
-      onClose()
-    } catch (e) {
-      toast.error('Failed to save')
-    } finally {
-      setLoading(false)
+    // Embed logic
+    let embedUrl = formData.videoUrl.trim()
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
+    const match = embedUrl.match(regExp)
+    if (match && match[2].length === 11) {
+      embedUrl = `https://www.youtube.com/embed/${match[2]}`
     }
+
+    const payload = {
+      ...formData,
+      videoUrl: embedUrl,
+      date: new Date().toISOString(),
+    }
+    const options = {
+      onSuccess: () => {
+        onClose()
+      },
+    }
+    if (video) updateVideo({ ...payload, id: video.id, thumbnail: '' }, options)
+    else addVideo({ ...payload, thumbnail: '' }, options)
   }
 
   return (
@@ -202,10 +187,10 @@ const VideoFormModal = ({ isOpen, onClose, video, onSuccess }: any) => {
               Cancel
             </button>
             <button
-              disabled={loading}
+              disabled={isSaving}
               className="px-6 py-2 bg-primary-600 text-white rounded-lg flex items-center gap-2"
             >
-              {loading ? (
+              {isSaving ? (
                 '...'
               ) : (
                 <>

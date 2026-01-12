@@ -106,12 +106,13 @@ export const CategoryModal: React.FC<{
             {/* Image Upload Section */}
             <div className="flex justify-center mb-6">
               <div className="relative group">
-                <div className="w-24 h-24 rounded-full border-2 border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center">
+                <div className="size-24 rounded-full border-2 border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center">
                   {previewUrl ? (
                     <img
                       src={previewUrl}
                       alt="Preview"
-                      className="w-full h-full object-cover"
+                      className="size-full object-fill"
+                      loading="lazy"
                     />
                   ) : (
                     <Camera className="text-slate-300" size={32} />

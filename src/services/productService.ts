@@ -29,7 +29,6 @@ export const updateProduct = async (
 ): Promise<Product> => {
   const isFormData = productData instanceof FormData
   const id = isFormData ? productData.get('id') : (productData as Product).id
-
   const { data } = await api.put<Product>(`/products/${id}`, productData)
   return data
 }

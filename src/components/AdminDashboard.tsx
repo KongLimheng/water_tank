@@ -1,22 +1,42 @@
 import {
   Box,
   ChevronRight,
-  Droplets,
+  Loader2,
   LogOut,
   Menu,
   PlaySquare,
   Settings,
   Tag,
 } from 'lucide-react'
-import React, { useCallback, useState } from 'react'
+import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Logo from '../public/logo.jpg'
 import { getCurrentUser, logout } from '../services/authService'
 import { ProductList } from '../types'
 import MenuSection from './MenuSection'
-import { CategoryView } from './views/CategoryView'
-import { ProductView } from './views/ProductView'
-import { SettingsView } from './views/SettingsView'
-import { VideoView } from './views/VideoView'
+// import { CategoryView } from './views/CategoryView'
+// import { ProductView } from './views/ProductView'
+// import { SettingsView } from './views/SettingsView'
+// import { VideoView } from './views/VideoView'
+
+const ProductView = lazy(() =>
+  import('./views/ProductView').then((module) => ({
+    default: module.ProductView,
+  }))
+)
+const CategoryView = lazy(() =>
+  import('./views/CategoryView').then((module) => ({
+    default: module.CategoryView,
+  }))
+)
+const SettingsView = lazy(() =>
+  import('./views/SettingsView').then((module) => ({
+    default: module.SettingsView,
+  }))
+)
+const VideoView = lazy(() =>
+  import('./views/VideoView').then((module) => ({ default: module.VideoView }))
+)
 
 interface AdminDashboardProps {
   products: ProductList[]
@@ -31,6 +51,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const toggleSidebar = useCallback(() => setSidebarOpen((prev) => !prev), [])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false) // Mobile: Auto close
+      } else {
+        setSidebarOpen(true) // Desktop: Auto open
+      }
+    }
+
+    // Set initial state on mount
+    handleResize()
+
+    // Add event listener
+    window.addEventListener('resize', handleResize)
+
+    // Cleanup listener on unmount
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const handleNavChange = useCallback((tabId: string) => {
+    setActiveTab(tabId)
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false)
+    }
+  }, [])
 
   const onExit = () => {
     navigate('/')
@@ -49,19 +95,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products }) => {
         {/* Sidebar */}
 
         <aside
-          className={`bg-white border-r border-slate-200 w-64 flex-shrink-0 flex flex-col transition-all duration-300 ${
-            sidebarOpen
-              ? 'translate-x-0'
-              : '-translate-x-64 absolute z-20 h-full'
-          }`}
+          className={`
+            fixed lg:static inset-y-0 left-0 z-30
+            bg-white border-r border-slate-200 w-64 flex-shrink-0 flex flex-col 
+            transition-transform duration-300 ease-in-out
+            ${
+              sidebarOpen
+                ? 'translate-x-0'
+                : '-translate-x-full lg:hidden lg:w-0'
+            }
+          `}
         >
-          <div className="h-16 flex items-center px-6 border-b border-slate-100">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3 shadow-sm">
-              <Droplets className="text-white" size={18} />
+          <div className="h-16 flex items-center gap-2 px-6 border-b border-slate-100">
+            <div className="size-10">
+              <img
+                src={Logo}
+                className="w-full h-full object-fill rounded-full shadow-2xl"
+              />
             </div>
-            <span className="text-lg font-bold text-slate-800 tracking-tight">
-              H2O<span className="text-primary-600">Admin</span>
-            </span>
+            <h1 className="text-xs font-bold text-slate-900 tracking-tight">
+              Fa De Manufacture Co., LTD.
+            </h1>
           </div>
 
           <div className="flex-1 overflow-y-auto py-6">
@@ -73,7 +127,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products }) => {
                 { id: 'videos', label: 'Video Guides', icon: PlaySquare },
               ]}
               activeTab={activeTab}
-              setActiveTab={setActiveTab}
+              setActiveTab={handleNavChange}
             />
 
             <MenuSection
@@ -84,7 +138,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products }) => {
                 // { id: 'reports', label: 'Reports', icon: FileText }, // Placeholder
               ]}
               activeTab={activeTab}
-              setActiveTab={setActiveTab}
+              setActiveTab={handleNavChange}
             />
           </div>
 
@@ -103,6 +157,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products }) => {
             </button>
           </div>
         </aside>
+
+        {/* Mobile Overlay (Click to close sidebar) */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/20 z-20 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content */}
         <div
@@ -139,10 +201,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products }) => {
 
           {/* Content Body */}
           <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-            {activeTab === 'products' && <ProductView products={products} />}
-            {activeTab === 'categories' && <CategoryView />}
-            {activeTab === 'videos' && <VideoView />}
-            {activeTab === 'settings' && <SettingsView />}
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-slate-400">
+                  <Loader2 className="animate-spin mr-2" /> Loading...
+                </div>
+              }
+            >
+              {activeTab === 'products' && <ProductView products={products} />}
+              {activeTab === 'categories' && <CategoryView />}
+              {activeTab === 'videos' && <VideoView />}
+              {activeTab === 'settings' && <SettingsView />}
+            </Suspense>
           </main>
         </div>
       </div>

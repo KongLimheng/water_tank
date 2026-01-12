@@ -1,6 +1,12 @@
 {
-  "watch": ["server"],
-  "ext": "ts",
-  "ignore": ["server/**/*.spec.ts"],
-  "exec": "ts-node --esm server/server.ts"
+  "watch": ["server/**/*"],
+  "ignore": ["server/**/*.test.ts", "server/**/*.spec.ts"],
+  "exec": "tsx server/server.ts",
+  "ext": "ts,js,json",
+  "stdout": true,
+  "stderr": true,
+
+  "env": {
+    "NODE_ENV": "development"
+  }
 }

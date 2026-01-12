@@ -3,15 +3,15 @@ import cors from 'cors'
 import 'dotenv/config'
 import express from 'express'
 import SyncFs from 'fs'
-import fs from 'fs/promises'
 import path from 'path'
 import slugify from 'slugify'
 import { fileURLToPath } from 'url'
-import AppError from './lib/AppError'
-import globalError, { notFoundHandler } from './lib/globalError'
-import { asyncHandler, comparePassword } from './lib/password'
-import { prisma } from './lib/prismaClient'
-import upload from './lib/upload'
+import AppError from './lib/AppError.js'
+import globalError, { notFoundHandler } from './lib/globalError.js'
+import { asyncHandler, comparePassword } from './lib/password.js'
+import { prisma } from './lib/prismaClient.js'
+import { requestLogger } from './lib/requestLogger.js'
+import upload from './lib/upload.js'
 
 // ES Modules fix for __dirname
 const __filename = fileURLToPath(import.meta.url)
@@ -31,9 +31,13 @@ app.use(
   })
 )
 app.use(express.json({ limit: '50mb' }))
-app.use(express.urlencoded({ limit: '50mb', extended: true }))
+app.use(
+  express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 10000 })
+)
+app.use(requestLogger)
 
 app.set('trust proxy', 1)
+
 // --- API Routes ---
 app.get('/api/health', (req, res) => {
   res.json({
@@ -75,9 +79,9 @@ app.get('/api/products', async (req, res) => {
       include: { variants: true, category: true },
       orderBy: { id: 'desc' },
     })
+
     res.json(products)
   } catch (err) {
-    console.error('Error fetching products:', err)
     res.status(500).json({ error: 'Failed to fetch products' })
   }
 })
@@ -123,11 +127,22 @@ app.get('/api/products/:brand/:category', async (req, res) => {
   }
 })
 
-// CREATE Product
 app.post('/api/products', upload.any(), async (req, res) => {
   try {
-    const { name, description, price, categoryId, volume, variants, brand } =
-      req.body
+    const {
+      name,
+      description,
+      price,
+      categoryId,
+      volume,
+      variants,
+      brand,
+      type,
+      diameter,
+      group,
+      height,
+      length,
+    } = req.body
 
     if (!name) {
       return res.status(400).json({ msg: 'Name and Price are required' })
@@ -168,6 +183,11 @@ app.post('/api/products', upload.any(), async (req, res) => {
         image: galleryPaths,
         categoryId: parseInt(categoryId),
         volume: volume || null,
+        height,
+        type,
+        group,
+        diameter,
+        length,
         variants: {
           create: parsedVariants.map((v: any) => ({
             name: v.name,
@@ -188,7 +208,6 @@ app.post('/api/products', upload.any(), async (req, res) => {
   }
 })
 
-// UPDATE Product
 app.put('/api/products/:id', upload.array('images', 10), async (req, res) => {
   try {
     const { id } = req.params
@@ -201,7 +220,50 @@ app.put('/api/products/:id', upload.array('images', 10), async (req, res) => {
       brand,
       categoryId,
       existingGallery,
+      type,
+      diameter,
+      height,
+      group,
+      length,
     } = req.body
+
+    const currentProduct = await prisma.product.findUnique({
+      where: { id: Number(id) },
+      select: { image: true },
+    })
+
+    if (!currentProduct) {
+      return res.status(404).json({ msg: 'Product not found' })
+    }
+
+    let keptImages: string[] = []
+    try {
+      keptImages = existingGallery ? JSON.parse(existingGallery) : []
+    } catch {
+      throw new AppError(400, 'Invalid existingGallery JSON format')
+    }
+
+    const imagesToDelete = currentProduct.image.filter(
+      (oldUrl) => !keptImages.includes(oldUrl)
+    )
+
+    imagesToDelete.forEach((imageUrl) => {
+      try {
+        const filename = imageUrl.split('/').pop()
+
+        if (filename) {
+          const filePath = path.join(__dirname, '../uploads/products', filename)
+
+          if (SyncFs.existsSync(filePath)) {
+            SyncFs.unlinkSync(filePath)
+            console.log(`Deleted orphan image: ${filename}`)
+          }
+        }
+      } catch (err) {
+        console.error(`Failed to delete image file: ${imageUrl}`, err)
+      }
+    })
+
     const files = (req.files as Express.Multer.File[]) || []
     const baseUrl = `${req.protocol}://${req.get('host')}`
     let galleryPaths: string[] = []
@@ -213,16 +275,7 @@ app.put('/api/products/:id', upload.array('images', 10), async (req, res) => {
       )
       galleryPaths = fileUrls
     }
-
-    let existingImage: string[] = []
-    try {
-      existingImage = existingGallery ? JSON.parse(existingGallery) : []
-    } catch {
-      throw new AppError(400, 'Invalid existingGallery JSON format')
-    }
-
-    const combineImage = [...existingImage, ...galleryPaths]
-
+    const finalImageList = [...keptImages, ...galleryPaths]
     let parsedVariants: any[] = []
 
     try {
@@ -240,7 +293,12 @@ app.put('/api/products/:id', upload.array('images', 10), async (req, res) => {
         categoryId: parseInt(categoryId),
         volume,
         brand,
-        image: combineImage,
+        image: finalImageList,
+        type,
+        diameter,
+        height,
+        group: group || '',
+        length,
         variants: {
           deleteMany: {},
           create: parsedVariants.map((v: any) => ({
@@ -296,8 +354,8 @@ app.delete('/api/products/:id', async (req, res) => {
 
           // Check if file exists and delete it
           try {
-            await fs.access(filePath)
-            await fs.unlink(filePath)
+            SyncFs.accessSync(filePath)
+            SyncFs.unlinkSync(filePath)
             console.log(`Deleted image: ${filename}`)
           } catch (fsErr) {
             // File doesn't exist, skip it
@@ -487,9 +545,31 @@ app.put(
 app.delete('/api/categories/:id', async (req, res) => {
   try {
     const { id } = req.params
-    await prisma.category.delete({
+
+    const catExist = await prisma.category.findUnique({
       where: { id: Number(id) },
     })
+
+    if (!catExist) throw new AppError(404, 'Category not found')
+    let imageUrl = catExist.image
+    await prisma.category
+      .delete({
+        where: { id: Number(id) },
+      })
+      .then(() => {
+        if (imageUrl) {
+          const uploadDir = path.join(__dirname, '..', 'uploads', 'categories')
+
+          // Extract filename from URL
+          const urlParts = imageUrl.split('/')
+          const filename = urlParts[urlParts.length - 1]
+
+          // Build the full file path
+          const oldPath = path.join(uploadDir, filename)
+
+          if (SyncFs.existsSync(oldPath)) SyncFs.unlinkSync(oldPath)
+        }
+      })
     res.json({ msg: 'Category deleted' })
   } catch (err) {
     console.error(err)
@@ -511,10 +591,70 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
+app.get('/api/settings', async (req, res) => {
+  try {
+    // Find the first record, or return defaults
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: 1 },
+    })
+
+    if (!settings) {
+      // Return empty defaults if DB is empty
+      return res.json({
+        phone: '',
+        email: '',
+        address: '',
+        mapUrl: '',
+        facebookUrl: '',
+        youtubeUrl: '',
+      })
+    }
+
+    res.json(settings)
+  } catch (err) {
+    console.error('Error fetching settings:', err)
+    res.status(500).json({ error: 'Failed to fetch settings' })
+  }
+})
+
+// UPDATE Settings
+app.put('/api/settings', async (req, res) => {
+  try {
+    const { phone, email, address, mapUrl, facebookUrl, youtubeUrl } = req.body
+
+    // Use upsert: Update if ID 1 exists, otherwise Create ID 1
+    const updatedSettings = await prisma.siteSettings.upsert({
+      where: { id: 1 },
+      update: {
+        phone,
+        email,
+        address,
+        mapUrl,
+        facebookUrl,
+        youtubeUrl,
+      },
+      create: {
+        id: 1,
+        phone: phone || '',
+        email: email || '',
+        address: address || '',
+        mapUrl: mapUrl || '',
+        facebookUrl: facebookUrl || '',
+        youtubeUrl: youtubeUrl || '',
+      },
+    })
+
+    res.json(updatedSettings)
+  } catch (err) {
+    console.error('Error saving settings:', err)
+    res.status(500).json({ error: 'Failed to save settings' })
+  }
+})
+
 app.use(globalError)
 app.use(notFoundHandler)
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`)
   console.log(`📁 Serving static files from: ${staticPath}`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
@@ -523,3 +663,22 @@ app.listen(port, () => {
     console.log(`✅ Production mode enabled`)
   }
 })
+
+// Graceful shutdown
+const shutdown = (signal: string) => {
+  console.log(`\n${signal} received. Shutting down gracefully...`)
+
+  server.close(() => {
+    console.log('HTTP server closed')
+    process.exit(0)
+  })
+
+  // Force close after 10 seconds
+  setTimeout(() => {
+    console.error('Could not close connections in time, forcing shutdown')
+    process.exit(1)
+  }, 10000)
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))

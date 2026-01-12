@@ -75,7 +75,8 @@ export const ProductView = ({ products }: ProductViewProp) => {
                 {products.map((product) => (
                   <tr
                     key={product.id}
-                    className="hover:bg-slate-50/50 transition"
+                    className="hover:bg-slate-50/50 transition cursor-pointer"
+                    onDoubleClick={() => handleOpenModal(product)}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
@@ -84,7 +85,8 @@ export const ProductView = ({ products }: ProductViewProp) => {
                             product.image[0] ||
                             generatePlaceholderImage(product.name)
                           }
-                          loading="lazy"
+                          loading="eager"
+                          decoding="async"
                           onLoad={() => setImageLoaded(true)}
                           className="w-12 h-12 rounded-lg object-cover bg-slate-100"
                           alt={product.slug}

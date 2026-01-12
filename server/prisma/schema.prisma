@@ -8,23 +8,23 @@ datasource db {
 
 model Product {
   id          Int       @id @default(autoincrement())
-  name          String           
-  slug          String           @unique
-
+  name        String
+  slug        String    @unique
   description String?
   price       Float
-  image       String[]                  @default([])
-
+  image       String[]  @default([])
   volume      String?
   brand       String?
-
   categoryId  Int
-  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-
-  variants    Variant[]
-
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  diameter    String?
+  height      String?
+  type        String?
+  group       String?
+  length      String?
+  category    Category  @relation(fields: [categoryId], references: [id])
+  variants    Variant[]
 
   @@index([name, slug])
 }
@@ -36,20 +36,18 @@ model Variant {
   stock     Int      @default(0)
   sku       String?
   image     String?
-
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model User {
   id        Int      @id @default(autoincrement())
-  email  String   @unique
+  email     String   @unique
   password  String
   role      String   @default("user")
-  name                        String
+  name      String
   createdAt DateTime @default(now())
 }
 
@@ -60,20 +58,31 @@ model Video {
   videoUrl    String
   thumbnail   String?
   date        DateTime?
-
   createdAt   DateTime  @default(now())
 }
 
 model Category {
-  id        Int      @id @default(autoincrement())
-  name      String
-  slug        String              @unique
+  id          Int       @id @default(autoincrement())
+  name        String
+  slug        String    @unique
   displayName String?
-  brand     String
-  products  Product[]
-  image String?
+  brand       String
+  createdAt   DateTime  @default(now())
+  image       String?
+  products    Product[]
 
   @@index([name, slug, brand])
+}
 
-  createdAt DateTime @default(now())
+// schema.prisma
+
+model SiteSettings {
+  id          Int      @id @default(1) // Force ID to 1 for singleton pattern
+  phone       String?
+  email       String?
+  address     String?
+  mapUrl      String? 
+  facebookUrl String?
+  youtubeUrl  String?
+  updatedAt   DateTime @updatedAt
 }

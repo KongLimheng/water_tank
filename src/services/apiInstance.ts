@@ -75,6 +75,7 @@ api.interceptors.response.use(
     // Optional: You can automatically unwrap response.data here if you want
     // to avoid doing it in every service function.
     // For now, we return the full response to keep typing standard.
+
     return response
   },
   (error: AxiosError<ServerErrorResponse>) => handleApiError(error)

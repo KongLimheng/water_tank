@@ -37,8 +37,11 @@ export interface ProductList {
   image: string[]
   volume: string
   categoryId: number
-  createdAt: Date
-  updatedAt: Date
+  type?: string
+  diameter: string
+  height: string
+  group: string
+  length?: string
   category: {
     brand: string
     id: number
@@ -46,6 +49,7 @@ export interface ProductList {
     slug: string
     createdAt: Date
     displayName: string
+    image: string
   }
   variants: {
     id: number

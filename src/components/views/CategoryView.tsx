@@ -95,7 +95,8 @@ export const CategoryView: React.FC = () => {
                   categories.map((cat) => (
                     <tr
                       key={cat.id}
-                      className="hover:bg-slate-50/50 transition"
+                      className="hover:bg-slate-50/50 transition cursor-pointer"
+                      onDoubleClick={() => handleOpenModal(cat)}
                     >
                       <td className="px-6 py-4 font-medium text-slate-800">
                         {cat.displayName || cat.name}
