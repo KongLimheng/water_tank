@@ -4,9 +4,5 @@
   "exec": "tsx server/server.ts",
   "ext": "ts,js,json",
   "stdout": true,
-  "stderr": true,
-
-  "env": {
-    "NODE_ENV": "development"
-  }
+  "stderr": true
 }

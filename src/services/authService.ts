@@ -1,3 +1,5 @@
+import { api } from './apiInstance'
+
 interface User {
   id: number
   username: string
@@ -5,36 +7,12 @@ interface User {
   email: string
 }
 
-const API_URL = process.env.API_URL || 'http://localhost:5000/api'
 const USER_KEY = 'h2o_active_user'
 
-export const login = async (
-  username: string,
-  password: string
-): Promise<User> => {
-  try {
-    const response = await fetch(`${API_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Invalid credentials')
-    }
-
-    const data = await response.json()
-    localStorage.setItem(USER_KEY, JSON.stringify(data.user))
-    return data.user
-  } catch (error) {
-    // Fallback Mock for Demo purposes if backend isn't running
-    console.warn(
-      'Backend auth failed or unreachable. Trying mock fallback.',
-      error
-    )
-
-    throw error
-  }
+export const login = async (username: string, password: string) => {
+  const response = await api.post(`/login`, { username, password })
+  localStorage.setItem(USER_KEY, JSON.stringify(response.data.user))
+  return response.data.user
 }
 
 export const logout = (): void => {

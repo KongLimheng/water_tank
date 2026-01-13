@@ -27,7 +27,7 @@ app.use('/uploads', express.static(staticPath))
 // Middleware
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL || ''],
+    origin: ['https://super-duper-spork-gpqrp6jq47php9jg-3000.app.github.dev'],
   })
 )
 app.use(express.json({ limit: '50mb' }))
@@ -156,7 +156,10 @@ app.post('/api/products', upload.any(), async (req, res) => {
       throw new AppError(400, 'Invalid variants JSON format')
     }
     const files = (req.files as Express.Multer.File[]) || []
-    const baseUrl = `${req.protocol}://${req.get('host')}`
+    const baseUrl =
+      process.env.NODE_ENV === 'development'
+        ? `${req.protocol}://${req.get('host')}`
+        : process.env.VITE_API_URL
     // Handle Images
     let mainImage = ''
     let galleryPaths: string[] = []
@@ -265,7 +268,10 @@ app.put('/api/products/:id', upload.array('images', 10), async (req, res) => {
     })
 
     const files = (req.files as Express.Multer.File[]) || []
-    const baseUrl = `${req.protocol}://${req.get('host')}`
+    const baseUrl =
+      process.env.NODE_ENV === 'development'
+        ? `${req.protocol}://${req.get('host')}`
+        : process.env.VITE_API_URL
     let galleryPaths: string[] = []
 
     if (files && files.length > 0) {
@@ -454,7 +460,10 @@ app.post(
       lower: true,
       replacement: '_',
     })}`
-    const baseUrl = `${req.protocol}://${req.get('host')}`
+    const baseUrl =
+      process.env.NODE_ENV === 'development'
+        ? `${req.protocol}://${req.get('host')}`
+        : process.env.VITE_API_URL
     const imageUrl = req.file
       ? `${baseUrl}/uploads/${uploadType}/${req.file.filename}`
       : null
@@ -492,14 +501,16 @@ app.put(
 
     if (!catExist) throw new AppError(404, 'Category not found')
     // Handle Image Update
-    const baseUrl = `${req.protocol}://${req.get('host')}`
+    const baseUrl =
+      process.env.NODE_ENV === 'development'
+        ? `${req.protocol}://${req.get('host')}`
+        : process.env.VITE_API_URL
 
     let imageUrl = catExist.image
 
     if (req.file) {
       const uploadDir = path.join(__dirname, '..', 'uploads', uploadType)
 
-      // 1. Delete old image if it exists to save space
       if (imageUrl) {
         // Extract filename from URL
         const urlParts = imageUrl.split('/')
@@ -663,7 +674,7 @@ app.use(globalError)
 app.use(notFoundHandler)
 
 const server = app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`)
+  console.log(`🚀 Server running on port http://localhost:${port}`)
   console.log(`📁 Serving static files from: ${staticPath}`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
 

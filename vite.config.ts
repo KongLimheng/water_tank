@@ -5,7 +5,7 @@ import { defineConfig, loadEnv } from 'vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const isProduction = mode === 'production'
-  const backendUrl = env.VITE_BACKEND_URL || 'http://localhost:5000'
+  const backendUrl = env.VITE_API_URL || 'http://localhost:5000'
   return {
     server: {
       port: 3000,

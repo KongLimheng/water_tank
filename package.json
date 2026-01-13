@@ -16,7 +16,7 @@
     "db:generate": "prisma generate",
     "clean": "rm -rf dist dist-server",
     "clean:build": "npm run clean && npm run build",
-    "db:seed": "ts-node server/lib/seed.ts"
+    "db:seed": "node dis-server/lib/seed.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
