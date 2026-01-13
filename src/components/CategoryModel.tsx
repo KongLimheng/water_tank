@@ -41,7 +41,7 @@ export const CategoryModal: React.FC<{
         // Set existing image preview
         setPreviewUrl(category.image || null)
       } else {
-        reset({ name: '', displayName: '', brand: 'Grown' })
+        reset({ name: '', displayName: '', brand: 'Crown' })
         setPreviewUrl(null)
       }
     }
@@ -174,7 +174,7 @@ export const CategoryModal: React.FC<{
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
               >
                 <option value="no">No Brand</option>
-                <option value="grown">Grown</option>
+                <option value="grown">Crown</option>
                 <option value="diamond">Diamond</option>
               </select>
             </div>

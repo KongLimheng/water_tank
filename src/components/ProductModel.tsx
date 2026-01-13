@@ -1,6 +1,6 @@
 import type { Category } from '@prisma/client'
 import { Plus, Save, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'react-toastify'
 // import { createProduct, updateProduct } from '../services/productService'
@@ -66,24 +66,7 @@ export const ProductModal: React.FC<{
   const watchedBrand = watch('brand')
   const watchedType = watch('type')
 
-  const availableCategories = useMemo(() => {
-    if (!categories) return []
-    const targetBrand = (watchedBrand || '').toLowerCase()
-
-    // Filter categories by the selected brand
-    const filtered = categories.filter(
-      (c) => (c.brand || '').toLowerCase() === targetBrand
-    )
-
-    if (product && (product.category || product.categoryId)) {
-      const alreadyInList = filtered.find((c) => c.id === product.category.id)
-      if (!alreadyInList) {
-        filtered.push(product.category)
-      }
-    }
-
-    return filtered
-  }, [categories, watchedBrand, product, isOpen])
+  const availableCategories = categories
 
   useEffect(() => {
     if (isOpen) {
@@ -279,7 +262,7 @@ export const ProductModal: React.FC<{
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
                 />
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Brand
                 </label>
@@ -290,7 +273,7 @@ export const ProductModal: React.FC<{
                   <option value="Grown">Grown</option>
                   <option value="Diamond">Diamond</option>
                 </select>
-              </div>
+              </div> */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Category
@@ -304,7 +287,7 @@ export const ProductModal: React.FC<{
                   <option value="">Select Category</option>
                   {availableCategories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {c.name} ({c.brand})
                     </option>
                   ))}
                 </select>

@@ -23,7 +23,7 @@ export const useProductMutations = () => {
   const updateMutation = useMutation({
     mutationFn: updateProduct,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['products', 'all'] })
       console.log('Product updated:', data.name)
     },
   })
