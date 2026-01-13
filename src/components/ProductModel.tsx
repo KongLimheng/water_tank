@@ -63,7 +63,6 @@ export const ProductModal: React.FC<{
     name: 'variants',
   })
 
-  const watchedBrand = watch('brand')
   const watchedType = watch('type')
 
   const availableCategories = categories

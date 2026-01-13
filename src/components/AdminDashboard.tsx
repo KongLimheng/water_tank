@@ -14,10 +14,6 @@ import Logo from '../public/logo.jpg'
 import { getCurrentUser, logout } from '../services/authService'
 import { ProductList } from '../types'
 import MenuSection from './MenuSection'
-// import { CategoryView } from './views/CategoryView'
-// import { ProductView } from './views/ProductView'
-// import { SettingsView } from './views/SettingsView'
-// import { VideoView } from './views/VideoView'
 
 const ProductView = lazy(() =>
   import('./views/ProductView').then((module) => ({

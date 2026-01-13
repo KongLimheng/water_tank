@@ -27,7 +27,10 @@ app.use('/uploads', express.static(staticPath))
 // Middleware
 app.use(
   cors({
-    origin: ['https://super-duper-spork-gpqrp6jq47php9jg-3000.app.github.dev'],
+    origin: [
+      'https://super-duper-spork-gpqrp6jq47php9jg-3000.app.github.dev',
+      'http://localhost:3000',
+    ],
   })
 )
 app.use(express.json({ limit: '50mb' }))
@@ -167,9 +170,7 @@ app.post('/api/products', upload.any(), async (req, res) => {
 
     if (files && files.length > 0) {
       // Construct full URLs
-      const fileUrls = files.map(
-        (f) => `${baseUrl}/uploads/products/${f.filename}`
-      )
+      const fileUrls = files.map((f) => `/uploads/products/${f.filename}`)
       mainImage = fileUrls[0]
       galleryPaths = fileUrls
     } else if (existingImage) {
@@ -276,9 +277,7 @@ app.put('/api/products/:id', upload.array('images', 10), async (req, res) => {
 
     if (files && files.length > 0) {
       // Construct full URLs
-      const fileUrls = files.map(
-        (f) => `${baseUrl}/uploads/products/${f.filename}`
-      )
+      const fileUrls = files.map((f) => `/uploads/products/${f.filename}`)
       galleryPaths = fileUrls
     }
     const finalImageList = [...keptImages, ...galleryPaths]
@@ -465,7 +464,7 @@ app.post(
         ? `${req.protocol}://${req.get('host')}`
         : process.env.VITE_API_URL
     const imageUrl = req.file
-      ? `${baseUrl}/uploads/${uploadType}/${req.file.filename}`
+      ? `/uploads/${uploadType}/${req.file.filename}`
       : null
 
     const existingCategory = await prisma.category.findUnique({
@@ -522,7 +521,7 @@ app.put(
         if (SyncFs.existsSync(oldPath)) SyncFs.unlinkSync(oldPath)
       }
       // 2. Set new image path
-      imageUrl = `${baseUrl}/uploads/${uploadType}/${req.file.filename}`
+      imageUrl = `/uploads/${uploadType}/${req.file.filename}`
     }
 
     const slug = `${brand.toLowerCase().replace(/\s+/g, '_')}_${slugify(name, {
@@ -596,6 +595,159 @@ app.delete(
   })
 )
 
+app.get('/api/settings', async (req, res) => {
+  try {
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: 1 },
+    })
+
+    if (!settings) {
+      return res.json({
+        phone: '',
+        email: '',
+        address: '',
+        mapUrl: '',
+        banners: [], // Default empty array
+      })
+    }
+    res.json(settings)
+  } catch (err) {
+    console.error('Error fetching settings:', err)
+    res.status(500).json({ error: 'Failed to fetch settings' })
+  }
+})
+
+app.put('/api/settings', upload.array('banner_files'), async (req, res) => {
+  try {
+    const {
+      phone,
+      email,
+      address,
+      mapUrl,
+      facebookUrl,
+      youtubeUrl,
+      banners_metadata,
+    } = req.body
+
+    const oldSettings = await prisma.siteSettings.findUnique({
+      where: { id: 1 },
+    })
+
+    // Multer puts the files in req.files
+    const files = (req.files as Express.Multer.File[]) || []
+
+    // Parse the metadata sent from client
+    let finalBanners: any[] = []
+
+    if (banners_metadata) {
+      const metadata = JSON.parse(banners_metadata)
+      let fileIndex = 0
+
+      // Reconstruct the banners array
+      finalBanners = metadata.map((item: any) => {
+        if (item.isNewUpload) {
+          // Grab the next available file from the multer array
+          const file = files[fileIndex]
+          fileIndex++
+
+          if (file) {
+            const publicUrl = `/uploads/banners/${file.filename}`
+            return {
+              name: item.name,
+              banner_image: publicUrl,
+            }
+          }
+        }
+
+        // Return existing item
+        return {
+          name: item.name,
+          banner_image: item.banner_image,
+        }
+      })
+    }
+
+    // ============================================================
+    // 3. IMAGE DELETION
+    // ============================================================
+    if (
+      oldSettings &&
+      oldSettings.banners &&
+      Array.isArray(oldSettings.banners)
+    ) {
+      const oldBanners = oldSettings.banners as any[]
+
+      // A. Extract lists of URLs
+      const oldUrls = oldBanners
+        .map((b) => b.banner_image)
+        .filter((url) => typeof url === 'string') // Type guard
+
+      const newUrls = finalBanners
+        .map((b) => b.banner_image)
+        .filter((url) => typeof url === 'string')
+
+      const urlsToDelete = oldUrls.filter((url) => !newUrls.includes(url))
+
+      await Promise.all(
+        urlsToDelete.map(async (url) => {
+          // Security: Ensure we are only deleting files in our uploads folder
+          if (url.startsWith('/uploads/banners/')) {
+            try {
+              // Resolve the absolute path on the server
+              // Adjust 'public' based on where your static folder actually lives relative to this file
+              const filePath = path.join(process.cwd(), url)
+
+              // Check if file exists before trying to delete
+              if (SyncFs.existsSync(filePath)) {
+                SyncFs.unlinkSync(filePath)
+                console.log(`[Cleanup] Deleted orphan image: ${filePath}`)
+              }
+            } catch (deleteErr) {
+              console.error(
+                `[Cleanup] Failed to delete file: ${url}`,
+                deleteErr
+              )
+              // We log error but don't stop the request; the DB update is more important
+            }
+          }
+        })
+      )
+    }
+    // ============================================================
+    // END DELETION LOGIC
+    // ============================================================
+
+    // Upsert to DB
+    const updatedSettings = await prisma.siteSettings.upsert({
+      where: { id: 1 },
+      update: {
+        phone,
+        email,
+        address,
+        mapUrl,
+        facebookUrl,
+        youtubeUrl,
+        banners: finalBanners, // Save the JSON array
+      },
+      create: {
+        id: 1,
+        phone: phone || '',
+        email: email || '',
+        address: address || '',
+        mapUrl: mapUrl || '',
+        facebookUrl: facebookUrl || '',
+        youtubeUrl: youtubeUrl || '',
+        banners: finalBanners,
+      },
+    })
+
+    res.json(updatedSettings)
+  } catch (err) {
+    console.error('Error saving settings:', err)
+    res.status(500).json({ error: 'Failed to save settings' })
+  }
+})
+
 if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../dist')
   app.use(express.static(frontendPath))
@@ -609,66 +761,6 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(frontendPath, 'index.html'))
   })
 }
-
-app.get('/api/settings', async (req, res) => {
-  try {
-    // Find the first record, or return defaults
-    const settings = await prisma.siteSettings.findUnique({
-      where: { id: 1 },
-    })
-
-    if (!settings) {
-      // Return empty defaults if DB is empty
-      return res.json({
-        phone: '',
-        email: '',
-        address: '',
-        mapUrl: '',
-        facebookUrl: '',
-        youtubeUrl: '',
-      })
-    }
-
-    res.json(settings)
-  } catch (err) {
-    console.error('Error fetching settings:', err)
-    res.status(500).json({ error: 'Failed to fetch settings' })
-  }
-})
-
-// UPDATE Settings
-app.put('/api/settings', async (req, res) => {
-  try {
-    const { phone, email, address, mapUrl, facebookUrl, youtubeUrl } = req.body
-
-    // Use upsert: Update if ID 1 exists, otherwise Create ID 1
-    const updatedSettings = await prisma.siteSettings.upsert({
-      where: { id: 1 },
-      update: {
-        phone,
-        email,
-        address,
-        mapUrl,
-        facebookUrl,
-        youtubeUrl,
-      },
-      create: {
-        id: 1,
-        phone: phone || '',
-        email: email || '',
-        address: address || '',
-        mapUrl: mapUrl || '',
-        facebookUrl: facebookUrl || '',
-        youtubeUrl: youtubeUrl || '',
-      },
-    })
-
-    res.json(updatedSettings)
-  } catch (err) {
-    console.error('Error saving settings:', err)
-    res.status(500).json({ error: 'Failed to save settings' })
-  }
-})
 
 app.use(globalError)
 app.use(notFoundHandler)

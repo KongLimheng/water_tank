@@ -1,25 +1,63 @@
 import { SiteSettings } from '../types'
 import { api } from './apiInstance' // Your axios instance
 
-export const DEFAULT_SETTINGS: SiteSettings = {
-  phone: '012 999 996',
-  email: 'chhaylyhh@online.com.kh',
-  address:
-    'ភូមិត្រពាំងថ្លឹង សង្កាត់ចោមចៅ ខណ្ឌពោធិ៍សែនជ័យ រាជធានីភ្នំពេញ ព្រះរាជាណាចក្រកម្ពុជា',
-  mapUrl:
-    'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3908.770519363063!2d104.8906643!3d11.5682859!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3109519fe4077d69%3A0x20138e822e434660!2sPhnom%20Penh!5e0!3m2!1sen!2skh!4v1715000000000!5m2!1sen!2skh',
-  facebookUrl: '#',
-  youtubeUrl: '#',
-}
-
 export const getSettings = async (): Promise<SiteSettings> => {
   const { data } = await api.get<SiteSettings>('/settings')
   return data
 }
 
-export const saveSettings = async (
-  settings: SiteSettings
-): Promise<SiteSettings> => {
-  const { data } = await api.put<SiteSettings>('/settings', settings)
+export const saveSettings = async (settings: any): Promise<SiteSettings> => {
+  const formData = new FormData()
+
+  // Append basic fields
+  formData.append('phone', settings.phone || '')
+  formData.append('email', settings.email || '')
+  formData.append('address', settings.address || '')
+  formData.append('mapUrl', settings.mapUrl || '')
+  formData.append('facebookUrl', settings.facebookUrl || '')
+  formData.append('youtubeUrl', settings.youtubeUrl || '')
+  formData.append('uploadType', 'banners')
+
+  if (settings.banners && Array.isArray(settings.banners)) {
+    const bannerMetadata: any[] = []
+    console.log(settings.banners, '==')
+    settings.banners.forEach((banner: any, index: number) => {
+      if (banner.file) {
+        // This is a NEW upload
+        // Append the file with a specific key.
+        // We use a naming convention like 'banner_files' so multer can grab them.
+        formData.append('banner_files', banner.file)
+
+        // Push metadata saying "The file at this index corresponds to this banner"
+        // Note: Multer will give us an array of files. The order *usually* matches,
+        // but it's safer to rely on the fact that we're iterating.
+        // However, standard FormData doesn't let us link a file to a specific JSON object easily.
+        // STRATEGY: We will mark this banner as "needs_upload" in the metadata.
+        bannerMetadata.push({
+          name: banner.name,
+          banner_image: null, // Server will fill this
+          isNewUpload: true,
+          originalIndex: index, // Track order
+        })
+      } else {
+        // Existing banner, just keep the URL
+        bannerMetadata.push({
+          name: banner.name,
+          banner_image: banner.banner_image,
+          isNewUpload: false,
+        })
+      }
+    })
+
+    // Append the metadata JSON
+    formData.append('banners_metadata', JSON.stringify(bannerMetadata))
+  }
+
+  // Send as Multipart
+  const { data } = await api.put<SiteSettings>('/settings', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
   return data
 }

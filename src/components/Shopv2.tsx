@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
 import React, { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -7,10 +6,7 @@ import { getCategoryByBrand } from '../services/categoryService'
 import { getProductsByBrandCategory } from '../services/productService'
 
 import { ProductList } from '../types'
-import Hero from './Hero'
-import ProductCard from './ProductCard'
-import ProductDetailsModal from './ProductDetailsModal'
-import { PriceListView } from './views/PriceListView'
+import { Hero } from './Hero'
 
 interface ShopProps {
   products: ProductList[] // Initial products (e.g., "All" list)
@@ -81,7 +77,7 @@ const Shop: React.FC<ShopProps> = ({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start mb-10 gap-4">
+        {/* <div className="flex flex-col md:flex-row justify-between items-start mb-10 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
               {isFiltering && (
@@ -105,10 +101,10 @@ const Shop: React.FC<ShopProps> = ({
               ? 'Loading...'
               : `Showing ${visibleProducts.length} results`}
           </div>
-        </div>
+        </div> */}
 
         {/* Category Tabs */}
-        {isFiltering && (
+        {/* {isFiltering && (
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
             <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
               <div className="flex items-center gap-3">
@@ -135,10 +131,10 @@ const Shop: React.FC<ShopProps> = ({
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Product Grid */}
-        {isGridLoading ? (
+        {/* {isGridLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 size={48} className="text-primary-600 animate-spin" />
           </div>
@@ -169,38 +165,10 @@ const Shop: React.FC<ShopProps> = ({
             products={visibleProducts} // Use the filtered list so tabs still work!
             onProductClick={setSelectedProduct}
           />
-        )}
+        )} */}
       </div>
-
-      <ProductDetailsModal
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onAddToCart={() => setSelectedProduct(null)}
-      />
     </>
   )
 }
-
-// Reusable Button
-const CategoryButton = ({
-  isActive,
-  onClick,
-  label,
-}: {
-  isActive: boolean
-  onClick: () => void
-  label: string
-}) => (
-  <button
-    onClick={onClick}
-    className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap ${
-      isActive
-        ? 'bg-slate-900 text-white border-slate-900'
-        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-    }`}
-  >
-    {label}
-  </button>
-)
 
 export default Shop

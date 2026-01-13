@@ -102,7 +102,7 @@ const AppContent: React.FC = () => {
 
       {/* Custom Footer Section */}
       <footer className="pt-10 pb-8 text-black font-sans">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           {/* Contact Header Section */}
           {isSettingsLoading ? (
             <div className="animate-pulse grid grid-cols-1 md:grid-cols-2 gap-8 h-64">

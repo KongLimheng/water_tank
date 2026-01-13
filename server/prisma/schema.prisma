@@ -84,5 +84,6 @@ model SiteSettings {
   mapUrl      String? 
   facebookUrl String?
   youtubeUrl  String?
+  banners     Json?
   updatedAt   DateTime @updatedAt
 }

@@ -93,6 +93,7 @@ export interface SiteSettings {
   mapUrl: string // The src attribute of the iframe
   facebookUrl: string
   youtubeUrl: string
+  banners: []
 }
 
 export interface Video {
@@ -102,4 +103,9 @@ export interface Video {
   videoUrl: string // Embed URL (e.g. YouTube embed)
   thumbnail?: string
   date: string
+}
+
+export interface BannerItem {
+  name: string
+  banner_image: string
 }

@@ -7,12 +7,6 @@ const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
 
-  const handleBrandSelect = (brand: string) => {
-    setMobileMenuOpen(false)
-    // Use URL params for filtering
-    navigate(`/?brand=${brand}&category=all`)
-  }
-
   return (
     <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,14 +16,14 @@ const Navbar: React.FC = () => {
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center  justify-center shadow-primary-200 shadow-lg overflow-hidden">
               <img
                 src={Logo}
-                className="w-full h-full object-fill rounded-full shadow-2xl"
+                className="size-full object-fill rounded-full shadow-2xl"
               />
             </div>
             <div>
               <h1 className="text-sm md:text-xl font-bold text-slate-900 tracking-tight">
                 Fa De Manufacture Co., LTD.
               </h1>
-              <p className="text-[10px] md:text-[14px] text-slate-500 font-medium tracking-wider uppercase">
+              <p className="text-[10px] md:text-[14px] text-slate-500 font-medium uppercase">
                 ផលិត និងផ្គត់ផ្គង់ បាសាំងទឹកអីណុក & ជ័រគ្រប់ប្រភេទ
               </p>
             </div>
