@@ -542,40 +542,48 @@ app.put(
   })
 )
 
-app.delete('/api/categories/:id', async (req, res) => {
-  try {
-    const { id } = req.params
+app.delete(
+  '/api/categories/:id',
+  asyncHandler(async (req, res) => {
+    try {
+      const { id } = req.params
 
-    const catExist = await prisma.category.findUnique({
-      where: { id: Number(id) },
-    })
-
-    if (!catExist) throw new AppError(404, 'Category not found')
-    let imageUrl = catExist.image
-    await prisma.category
-      .delete({
+      const catExist = await prisma.category.findUnique({
         where: { id: Number(id) },
       })
-      .then(() => {
-        if (imageUrl) {
-          const uploadDir = path.join(__dirname, '..', 'uploads', 'categories')
 
-          // Extract filename from URL
-          const urlParts = imageUrl.split('/')
-          const filename = urlParts[urlParts.length - 1]
+      if (!catExist) throw new AppError(404, 'Category not found')
+      let imageUrl = catExist.image
+      await prisma.category
+        .delete({
+          where: { id: Number(id) },
+        })
+        .then(() => {
+          if (imageUrl) {
+            const uploadDir = path.join(
+              __dirname,
+              '..',
+              'uploads',
+              'categories'
+            )
 
-          // Build the full file path
-          const oldPath = path.join(uploadDir, filename)
+            // Extract filename from URL
+            const urlParts = imageUrl.split('/')
+            const filename = urlParts[urlParts.length - 1]
 
-          if (SyncFs.existsSync(oldPath)) SyncFs.unlinkSync(oldPath)
-        }
-      })
-    res.json({ msg: 'Category deleted' })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'Failed to delete category' })
-  }
-})
+            // Build the full file path
+            const oldPath = path.join(uploadDir, filename)
+
+            if (SyncFs.existsSync(oldPath)) SyncFs.unlinkSync(oldPath)
+          }
+        })
+      res.json({ msg: 'Category deleted' })
+    } catch (err) {
+      console.error(err)
+      res.status(500).json({ error: 'Failed to delete category' })
+    }
+  })
+)
 
 if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../dist')
