@@ -1,20 +1,25 @@
-import type { Category } from '@prisma/client'
+import { useQuery } from '@tanstack/react-query'
 import { Camera, Upload, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { useCategoryMutations } from '../hooks/useCategoryMutations'
+import { getBrands } from '../services/brandService'
+import { CategoryList } from '../types'
 
+interface Brand {
+  id: number
+  name: string
+}
 interface CategoryFormValues {
   name: string
   displayName: string
-  brand: string
+  brandId: string
 }
 
 export const CategoryModal: React.FC<{
   isOpen: boolean
   onClose: () => void
-  category?: Category | null
-  onSuccess: () => void
+  category?: CategoryList | null
 }> = ({ isOpen, onClose, category }) => {
   const {
     register,
@@ -27,6 +32,12 @@ export const CategoryModal: React.FC<{
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
+  const { data: brands = [] } = useQuery({
+    queryKey: ['brands', 'modal'],
+    queryFn: getBrands,
+    staleTime: 1000 * 60 * 5,
+  })
+
   useEffect(() => {
     if (isOpen) {
       // Reset Image State
@@ -36,12 +47,12 @@ export const CategoryModal: React.FC<{
         reset({
           name: category.name,
           displayName: category.displayName || '',
-          brand: category.brand as any,
+          brandId: category.brandId?.toString() || '',
         })
         // Set existing image preview
         setPreviewUrl(category.image || null)
       } else {
-        reset({ name: '', displayName: '', brand: 'Crown' })
+        reset({ name: '', displayName: '', brandId: '' })
         setPreviewUrl(null)
       }
     }
@@ -59,7 +70,9 @@ export const CategoryModal: React.FC<{
     const formData = new FormData()
     formData.append('name', data.name)
     formData.append('displayName', data.displayName || '')
-    formData.append('brand', data.brand)
+    if (data.brandId) {
+      formData.append('brandId', data.brandId)
+    }
     formData.append('uploadType', 'categories')
 
     if (selectedFile) {
@@ -169,13 +182,15 @@ export const CategoryModal: React.FC<{
                 Brand Scope
               </label>
               <select
-                {...register('brand')}
-                disabled={!!category}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+                {...register('brandId')}
+                className="w-full px-3 py-2 border rounded-lg bg-white"
               >
-                <option value="no">No Brand</option>
-                <option value="grown">Crown</option>
-                <option value="diamond">Diamond</option>
+                <option value="">-- No Specific Brand --</option>
+                {brands.map((brand: Brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </option>
+                ))}
               </select>
             </div>
 

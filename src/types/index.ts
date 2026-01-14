@@ -7,13 +7,6 @@ export interface ProductVariant {
   image?: string
 }
 
-export interface Category {
-  id: number
-  name: string
-  displayName?: string
-  brand: 'Grown' | 'Diamond' | 'All' // Categories can be specific to a brand or general
-}
-
 export interface Product {
   id: number
   name: string
@@ -108,4 +101,21 @@ export interface Video {
 export interface BannerItem {
   name: string
   banner_image: string
+}
+
+export interface Brand {
+  id: number
+  name: string
+  slug: string
+}
+
+export interface CategoryList {
+  id: number
+  name: string
+  slug: string
+  displayName?: string | null
+  image?: string | null
+  brandId?: number | null
+
+  brand?: Brand | null
 }

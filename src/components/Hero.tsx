@@ -25,7 +25,7 @@ export const Hero: React.FC = () => {
   if (loading) return <HomeSkeleton />
 
   return (
-    <div className="flex gap-16 flex-col px-5 mt-4">
+    <div className="flex gap-16 flex-col px-40 mt-4">
       {banners.map((banner, index) => (
         <ScrollRevealRow banner={banner} index={index} />
         // <div key={index} className="relative bg-primary-900 overflow-hidden">
@@ -59,7 +59,7 @@ const ScrollRevealRow = ({
           observer.disconnect() // Run once
         }
       },
-      { threshold: 0.3 } // Trigger when 20% visible
+      { threshold: 0.15 } // Trigger when 20% visible
     )
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
@@ -71,8 +71,7 @@ const ScrollRevealRow = ({
       ref={ref}
       // Apply the delay inline. Only apply it when becoming visible.
       style={{ transitionDelay: isVisible ? `${waveDelay}ms` : '0ms' }}
-      className={`
-        flex flex-col
+      className={`flex flex-col gap-4
         transform transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)]
         ${
           isVisible
@@ -81,15 +80,23 @@ const ScrollRevealRow = ({
         }
            `}
     >
-      <div
-        key={index}
-        className="relative bg-primary-900 overflow-hidden rounded-2xl"
-      >
+      <div className="group relative w-full h-[50vh] md:h-[60vh] rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-primary-500/20">
+        {/* Image with Zoom Effect */}
         <img
           src={banner.banner_image}
-          alt="Water Bottle Splash"
-          className="w-full max-h-[40vh] object-fill shadow-2xl"
+          alt={banner.name}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
+
+        {/* Gradient Overlay for Text Readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
+
+        {/* Content */}
+        <div className="absolute bottom-0 left-0 p-8 w-full">
+          <h1 className="text-6xl font-bold text-white leading-tight">
+            {banner.name}
+          </h1>
+        </div>
       </div>
     </div>
   )
