@@ -110,13 +110,13 @@ app.get('/api/products/:id', async (req, res) => {
 })
 
 //Get products by brand and category
-app.get('/api/products/:brand/:category', async (req, res) => {
+app.get('/api/products/:brandId/:category', async (req, res) => {
   try {
-    const { brand, category } = req.params
+    const { brandId, category } = req.params
     const products = await prisma.product.findMany({
       where: {
         category: {
-          brand,
+          brandId: Number(brandId),
           slug: category !== 'all' ? category : undefined,
         },
       },
@@ -437,9 +437,8 @@ app.delete('/api/videos/:id', async (req, res) => {
 // --- Categories ---
 app.get('/api/categories', async (req, res) => {
   try {
-    const { brand } = req.query
     const categories = await prisma.category.findMany({
-      where: brand ? { brand: String(brand) } : undefined,
+      include: { brand: true },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -454,11 +453,19 @@ app.post(
   '/api/categories',
   upload.single('image'),
   asyncHandler(async (req, res) => {
-    const { name, brand, displayName, uploadType } = req.body
-    const slug = `${brand.toLowerCase().replace(/\s+/g, '_')}_${slugify(name, {
-      lower: true,
-      replacement: '_',
-    })}`
+    const { name, brandId, displayName, uploadType } = req.body
+
+    const brand = await prisma.brand.findUnique({ where: { id: brandId } })
+    if (!brand) throw new AppError(404, 'Brand not exists')
+
+    const slug = `${brand.name.toLowerCase().replace(/\s+/g, '_')}_${slugify(
+      name,
+      {
+        lower: true,
+        replacement: '_',
+      }
+    )}`
+
     const baseUrl =
       process.env.NODE_ENV === 'development'
         ? `${req.protocol}://${req.get('host')}`
@@ -478,10 +485,11 @@ app.post(
       data: {
         name,
         slug,
-        brand: brand.toLowerCase() || null,
+        brandId: brandId ? Number(brandId) : null,
         displayName: displayName || null,
         image: imageUrl,
       },
+      include: { brand: true },
     })
     res.json(newCat)
   })
@@ -492,7 +500,10 @@ app.put(
   upload.single('image'),
   asyncHandler(async (req, res) => {
     const { id } = req.params
-    const { name, brand, displayName, uploadType } = req.body
+    const { name, brandId, displayName, uploadType } = req.body
+
+    const brand = await prisma.brand.findUnique({ where: { id: brandId } })
+    if (!brand) throw new AppError(404, 'Brand not exists')
 
     const catExist = await prisma.category.findUnique({
       where: { id: Number(id) },
@@ -524,10 +535,13 @@ app.put(
       imageUrl = `/uploads/${uploadType}/${req.file.filename}`
     }
 
-    const slug = `${brand.toLowerCase().replace(/\s+/g, '_')}_${slugify(name, {
-      lower: true,
-      replacement: '_',
-    })}`
+    const slug = `${brand.name.toLowerCase().replace(/\s+/g, '_')}_${slugify(
+      name,
+      {
+        lower: true,
+        replacement: '_',
+      }
+    )}`
     if (slug !== catExist.slug) {
       const existingCategory = await prisma.category.findUnique({
         where: { slug },
@@ -543,10 +557,11 @@ app.put(
       data: {
         name,
         slug,
-        brand: brand || null,
+        brandId: brandId ? Number(brandId) : null,
         displayName: displayName || null,
         image: imageUrl,
       },
+      include: { brand: true },
     })
     res.json(updatedCategory)
   })
@@ -594,6 +609,64 @@ app.delete(
     }
   })
 )
+
+// ===========================================================================
+// ===========================================================================
+
+app.get('/api/brands', async (req, res) => {
+  try {
+    const brands = await prisma.brand.findMany({ orderBy: { name: 'asc' } })
+    res.json(brands)
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch brands' })
+  }
+})
+
+app.post(
+  '/api/brands',
+  asyncHandler(async (req, res) => {
+    const { name } = req.body
+    const slug = slugify(name, { lower: true })
+
+    const brand = await prisma.brand.create({
+      data: { name, slug },
+    })
+    res.json(brand)
+  })
+)
+
+app.put(
+  '/api/brands/:id',
+  asyncHandler(async (req, res) => {
+    const { id } = req.params
+    const { name } = req.body
+    const current = await prisma.brand.findUnique({ where: { id: Number(id) } })
+    if (!current) throw new AppError(404, 'Brand not found')
+
+    const updated = await prisma.brand.update({
+      where: { id: Number(id) },
+      data: {
+        name,
+        slug: slugify(name, { lower: true }),
+      },
+    })
+    res.json(updated)
+  })
+)
+
+app.delete('/api/brands/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    // Optional: Check if products depend on this brand before deleting?
+    await prisma.brand.delete({ where: { id: Number(id) } })
+    res.json({ msg: 'Brand deleted' })
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to delete brand' })
+  }
+})
+
+// ===========================================================================
+// ===========================================================================
 
 app.get('/api/settings', async (req, res) => {
   try {

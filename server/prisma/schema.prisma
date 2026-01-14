@@ -66,24 +66,30 @@ model Category {
   name        String
   slug        String    @unique
   displayName String?
-  brand       String
   createdAt   DateTime  @default(now())
   image       String?
+  brandId     Int?
+  brand       Brand?    @relation(fields: [brandId], references: [id])
   products    Product[]
-
-  @@index([name, slug, brand])
 }
 
-// schema.prisma
-
 model SiteSettings {
-  id          Int      @id @default(1) // Force ID to 1 for singleton pattern
+  id          Int      @id @default(1)
   phone       String?
   email       String?
   address     String?
-  mapUrl      String? 
+  mapUrl      String?
   facebookUrl String?
   youtubeUrl  String?
-  banners     Json?
   updatedAt   DateTime @updatedAt
+  banners     Json?
+}
+
+model Brand {
+  id         Int        @id @default(autoincrement())
+  name       String     @unique
+  slug       String     @unique
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  categories Category[]
 }
