@@ -1,5 +1,4 @@
-import type { Category } from '@prisma/client'
-import { CategoryList } from '../types'
+import { Category } from '../types'
 import { api } from './apiInstance'
 
 export const createCategory = async (formData: FormData): Promise<Category> => {
@@ -14,8 +13,8 @@ export const updateCategory = async (formData: FormData): Promise<Category> => {
   return data
 }
 
-export const getCategories = async (): Promise<CategoryList[]> => {
-  const response = await api.get<CategoryList[]>('/categories')
+export const getCategories = async (): Promise<Category[]> => {
+  const response = await api.get<Category[]>('/categories')
   return response.data
 }
 

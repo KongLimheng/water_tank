@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { ProductList } from '../types'
-import { generatePlaceholderImage } from '../utils/placeholderImage'
+import { ProductList } from '../../types'
+import { generatePlaceholderImage } from '../../utils/placeholderImage'
 
 interface ProductCardProps {
   product: ProductList

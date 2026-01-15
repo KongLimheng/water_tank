@@ -47,6 +47,8 @@ export const handleApiError = (error: AxiosError<ServerErrorResponse>) => {
   let isOperational = false
   let details = null
 
+  console.log(error, 'err')
+
   if (error.response) {
     // The request was made and the server responded with a status code
     const { data, status } = error.response

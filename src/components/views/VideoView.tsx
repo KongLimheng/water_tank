@@ -4,10 +4,12 @@ import React, { useState } from 'react'
 import { useVideoMutations } from '../../hooks/useVideoMutations'
 import { getVideos } from '../../services/videoService'
 import { Video } from '../../types'
+import { ConfirmModal } from '../ConfirmModal'
 
 export const VideoView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingVideo, setEditingVideo] = useState<Video | null>(null)
+  const [deleteData, setDeleteData] = useState<number>(null)
 
   const { data: videos = [], isLoading } = useQuery({
     queryKey: ['videos', 'all-tab'], // Cache key
@@ -16,10 +18,10 @@ export const VideoView = () => {
 
   const { deleteVideo, isDeleting } = useVideoMutations()
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Delete this video?')) {
-      deleteVideo(id)
-    }
+  const handleDelete = () => {
+    if (!deleteData) return
+    deleteVideo(deleteData)
+    setDeleteData(null)
   }
 
   return (
@@ -72,7 +74,9 @@ export const VideoView = () => {
                     </button>
                     <button
                       disabled={isDeleting}
-                      onClick={() => handleDelete(video.id)}
+                      onClick={() => {
+                        setDeleteData(video.id)
+                      }}
                       className="p-2 text-slate-400 hover:text-red-600"
                     >
                       <Trash2 size={16} />
@@ -83,6 +87,11 @@ export const VideoView = () => {
             </div>
           ))}
         </div>
+        {videos.length === 0 && (
+          <div className="py-20 text-center text-slate-400 bg-slate-50 rounded-xl border-dashed border-2 border-slate-200">
+            No video found.
+          </div>
+        )}
       </div>
 
       {isModalOpen && (
@@ -93,6 +102,15 @@ export const VideoView = () => {
           onSuccess={() => {}}
         />
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteData}
+        onClose={() => setDeleteData(null)}
+        onConfirm={handleDelete}
+        title={`Are you sure ?`}
+        message="This action cannot be undone."
+        confirmText="Delete"
+      />
     </>
   )
 }
@@ -147,6 +165,7 @@ const VideoFormModal = ({ isOpen, onClose, video, onSuccess }: any) => {
               required
               className="w-full px-3 py-2 border rounded-lg"
               value={formData.title}
+              autoFocus
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
@@ -176,6 +195,7 @@ const VideoFormModal = ({ isOpen, onClose, video, onSuccess }: any) => {
               onChange={(e) =>
                 setFormData({ ...formData, videoUrl: e.target.value })
               }
+              placeholder="https://youtu.be/v3xxUTNCpic?si=BjQes5duHT5-BWzF"
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">

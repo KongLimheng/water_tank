@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
-import '../styles/image-skeleton.css'
+import '../../styles/image-skeleton.css'
 
 interface ProductImageGalleryProps {
   images: string[]

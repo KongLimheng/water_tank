@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client'
+
 export interface ProductVariant {
   id?: number
   name: string // e.g., "500L Type A"
@@ -7,61 +9,60 @@ export interface ProductVariant {
   image?: string
 }
 
-export interface Product {
-  id: number
-  name: string
-  description: string
-  price: number // Base display price
-  image: string
-  category: string
-  categoryId?: number // Foreign Key for relation
-  brand: 'Grown' | 'Diamond'
-  volume?: string
-  variants?: ProductVariant[]
-}
-
-export interface ProductList {
-  brand: string
-  id: number
-  name: string
-  slug: string
-  description: string
-  price: number
-  image: string[]
-  volume: string
-  categoryId: number
-  type?: string
-  diameter: string
-  height: string
-  group: string
-  length?: string
-  category: {
-    brand: string
-    id: number
-    name: string
-    slug: string
-    createdAt: Date
-    displayName: string
-    image: string
+export type ProductList = Prisma.ProductGetPayload<{
+  include: {
+    category: {
+      include: {
+        brand: true
+      }
+    }
+    variants: true
   }
-  variants: {
-    id: number
-    name: string
-    price: number
-    image: string
-    createdAt: Date
-    updatedAt: Date
-    stock: number
-    sku: string
-    productId: number
-  }[]
-}
+}>
 
-export interface CartItem extends Product {
-  quantity: number
-  selectedVariantId?: number
-  selectedVariantName?: string
-}
+export type Category = Prisma.CategoryGetPayload<{
+  include: {
+    brand: true
+  }
+}>
+
+// export interface ProductList {
+//   brand: string
+//   id: number
+//   name: string
+//   slug: string
+//   description: string
+//   price: number
+//   image: string[]
+//   volume: string
+//   categoryId: number
+//   type?: string
+//   diameter: string
+//   height: string
+//   group: string
+//   length?: string
+//   category: {
+//     brand: {
+//       name: string
+//     }
+//     name: string
+//     slug: string
+//     createdAt: Date
+//     displayName: string
+//     image: string
+//   }
+//   variants: {
+//     id: number
+//     name: string
+//     price: number
+//     image: string
+//     createdAt: Date
+//     updatedAt: Date
+//     stock: number
+//     sku: string
+//     productId: number
+//   }[]
+// }
 
 export interface ChatMessage {
   id: string

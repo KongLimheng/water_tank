@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
-import CategoryCard from '../components/CategoryCard'
+import CategoryCard from '../components/Category/CategoryCard'
 import { getCategories } from '../services/categoryService'
 
 const ShopCategories = () => {

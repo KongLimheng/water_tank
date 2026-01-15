@@ -2,25 +2,24 @@ import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import ProductDetailsModal from '../components/ProductDetailsModal'
+import ProductDetailsModal from '../components/Product/ProductDetailsModal'
 import { PriceListView } from '../components/views/PriceListView'
 import { getProductsByBrandCategory } from '../services/productService'
 import { ProductList } from '../types'
 
 const ShopProducts = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeBrand = (searchParams.get('brand') || 'all').toLowerCase()
-  const activeCategory = (searchParams.get('category') || 'all').toLowerCase()
-  const isFiltering = activeBrand !== 'all'
+  const activeCategory = searchParams.get('category')
   const [selectedProduct, setSelectedProduct] = useState<ProductList | null>(
     null
   )
   const router = useNavigate()
 
+  console.log(searchParams.get('category'))
+
   const { data: fetchedProducts, isLoading: isQueryLoading } = useQuery({
-    queryKey: ['products', activeBrand, activeCategory],
-    queryFn: () => getProductsByBrandCategory(activeBrand, activeCategory),
-    enabled: isFiltering,
+    queryKey: ['products', 'category', activeCategory],
+    queryFn: () => getProductsByBrandCategory(activeCategory),
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     placeholderData: (previousData) => previousData,
   })
@@ -34,11 +33,11 @@ const ShopProducts = () => {
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex items-center justify-between gap-2 mb-2">
           <h2 className="text-3xl font-bold text-slate-900">
-            {`All ${
+            {/* {`All ${
               activeBrand.charAt(0).toUpperCase() + activeBrand.slice(1)
             } ${
               visibleProducts.length ? visibleProducts[0].category.name : ''
-            } Products`}
+            } Products`} */}
           </h2>
           <div className="text-sm text-slate-400 font-medium">
             {`Showing ${visibleProducts.length} results`}

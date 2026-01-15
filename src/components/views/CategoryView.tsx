@@ -14,7 +14,7 @@ import React, { useState } from 'react'
 import { useCategoryMutations } from '../../hooks/useCategoryMutations'
 import { getCategories } from '../../services/categoryService'
 import { BrandModal } from '../BrandModal'
-import { CategoryModal } from '../CategoryModel'
+import { CategoryModal } from '../Category/CategoryModel'
 import { ConfirmModal } from '../ConfirmModal'
 
 export const CategoryView: React.FC = () => {
@@ -42,7 +42,7 @@ export const CategoryView: React.FC = () => {
   })
 
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
-    queryKey: ['brands', 'all'],
+    queryKey: ['brands'],
     queryFn: getBrands,
   })
 
@@ -243,6 +243,7 @@ export const CategoryView: React.FC = () => {
         isOpen={isCatModalOpen}
         onClose={() => setIsCatModalOpen(false)}
         category={editingCat}
+        brands={brands}
       />
 
       <BrandModal

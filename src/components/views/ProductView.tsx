@@ -5,7 +5,7 @@ import { useProductMutations } from '../../hooks/useProductMutations'
 import { getCategories } from '../../services/categoryService'
 import { ProductList } from '../../types'
 import { generatePlaceholderImage } from '../../utils/placeholderImage'
-import { ProductModal } from '../ProductModel'
+import { ProductModal } from '../Product/ProductModel'
 
 interface ProductViewProp {
   products: ProductList[]
@@ -26,7 +26,7 @@ export const ProductView = ({ products }: ProductViewProp) => {
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories', 'all'], // Cache key
-    queryFn: () => getCategories(),
+    queryFn: getCategories,
     staleTime: 1000 * 60 * 10, // Keep categories fresh for 10 minutes
   })
 
@@ -103,7 +103,9 @@ export const ProductView = ({ products }: ProductViewProp) => {
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2.5 py-1 rounded-md text-xs font-bold capitalize bg-orange-50 text-orange-700 border border-orange-100">
-                        {product.category.brand}
+                        {product.category.brand
+                          ? product.category.brand.name
+                          : ''}
                       </span>
                     </td>
                     <td className="px-6 py-4">

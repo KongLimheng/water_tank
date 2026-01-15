@@ -1,9 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import React, { useState } from 'react'
+import React from 'react'
 import { useSearchParams } from 'react-router-dom'
-
-import { getCategoryByBrand } from '../services/categoryService'
-import { getProductsByBrandCategory } from '../services/productService'
 
 import { ProductList } from '../types'
 import { Hero } from './Hero'
@@ -18,58 +14,13 @@ const Shop: React.FC<ShopProps> = ({
   isLoading: initialLoading,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [selectedProduct, setSelectedProduct] = useState<ProductList | null>(
-    null
-  )
 
-  // 1. Derive Params
   const activeBrand = (searchParams.get('brand') || 'all').toLowerCase()
   const activeCategory = (searchParams.get('category') || 'all').toLowerCase()
   const isFiltering = activeBrand !== 'all'
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
 
-  // 2. Query: Categories (Only fetches if brand is selected)
-  const { data: categories = [], isLoading: isCatsLoading } = useQuery({
-    queryKey: ['categories', activeBrand],
-    queryFn: () => getCategoryByBrand(activeBrand),
-    enabled: isFiltering, // Don't fetch if brand is 'all'
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-  })
-
-  // 3. Query: Products (Only fetches if brand is selected)
-  const { data: fetchedProducts, isLoading: isQueryLoading } = useQuery({
-    queryKey: ['products', activeBrand, activeCategory],
-    queryFn: () => getProductsByBrandCategory(activeBrand, activeCategory),
-    enabled: isFiltering,
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    placeholderData: (previousData) => previousData, // Keep showing old data while fetching new (smoother UX)
-  })
-
-  const visibleProducts = isFiltering ? fetchedProducts || [] : initialProducts
-  const isGridLoading = isFiltering ? isQueryLoading : initialLoading
-
-  // Handlers
-  const handleCategoryChange = (category: string) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev)
-      newParams.set('category', category)
-      return newParams
-    })
-  }
-
-  const handleClearFilters = () => setSearchParams({})
-
-  const getPageTitle = () => {
-    if (activeCategory === 'all') {
-      return activeBrand === 'all'
-        ? 'Featured Products'
-        : `All ${
-            activeBrand.charAt(0).toUpperCase() + activeBrand.slice(1)
-          } Products`
-    }
-    const cat = categories.find((c) => c.slug === activeCategory)
-    return cat?.displayName || cat?.name || activeCategory
-  }
+  // const visibleProducts = isFiltering ? fetchedProducts || [] : initialProducts
+  // const isGridLoading = isFiltering ? isQueryLoading : initialLoading
 
   return (
     <>

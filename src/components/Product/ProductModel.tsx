@@ -1,12 +1,12 @@
-import type { Category } from '@prisma/client'
 import { Plus, Save, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'react-toastify'
 // import { createProduct, updateProduct } from '../services/productService'
-import { useProductMutations } from '../hooks/useProductMutations'
-import { ProductList } from '../types'
-import ImageDragDrop from './ImageDragDrop'
+import { useProductMutations } from '../../hooks/useProductMutations'
+import { Category, ProductList } from '../../types'
+import ImageDragDrop from '../ImageDragDrop'
+
 interface ProductFormValues {
   id?: number
   name: string
@@ -273,7 +273,7 @@ export const ProductModal: React.FC<{
                   <option value="Diamond">Diamond</option>
                 </select>
               </div> */}
-              <div>
+              <div className="col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Category
                 </label>
@@ -286,7 +286,7 @@ export const ProductModal: React.FC<{
                   <option value="">Select Category</option>
                   {availableCategories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} ({c.brand})
+                      {c.name} ({c.brandId ? c.brand.name : 'No Brand'})
                     </option>
                   ))}
                 </select>

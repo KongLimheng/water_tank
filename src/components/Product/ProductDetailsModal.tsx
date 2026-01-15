@@ -1,24 +1,16 @@
 import React, { useState } from 'react'
-import { Product, ProductList, ProductVariant, Review } from '../types'
+import { ProductList, ProductVariant } from '../../types'
 import ProductImageGallery from './ProductImageGallery'
 
 interface ProductDetailsModalProps {
   product: ProductList | null
   onClose: () => void
-  onAddToCart: (product: Product, variant?: ProductVariant) => void
 }
 
 const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   product,
   onClose,
-  onAddToCart,
 }) => {
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [newReview, setNewReview] = useState({
-    author: '',
-    rating: 5,
-    text: '',
-  })
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     null
   )

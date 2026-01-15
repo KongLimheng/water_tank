@@ -8,11 +8,10 @@ export const getProducts = async (): Promise<ProductList[]> => {
 }
 
 export const getProductsByBrandCategory = async (
-  brand: string,
   category: string
 ): Promise<ProductList[]> => {
   const { data } = await api.get<ProductList[]>(
-    `/products/${brand}/${category}`
+    `/product/category?id=${category}`
   )
   return data
 }

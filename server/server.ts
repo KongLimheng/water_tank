@@ -79,7 +79,14 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     const products = await prisma.product.findMany({
-      include: { variants: true, category: true },
+      include: {
+        variants: true,
+        category: {
+          include: {
+            brand: true,
+          },
+        },
+      },
       orderBy: { id: 'desc' },
     })
 
@@ -110,17 +117,15 @@ app.get('/api/products/:id', async (req, res) => {
 })
 
 //Get products by brand and category
-app.get('/api/products/:brandId/:category', async (req, res) => {
+app.get('/api/product/category', async (req, res) => {
   try {
-    const { brandId, category } = req.params
+    const { id } = req.query
+
     const products = await prisma.product.findMany({
       where: {
-        category: {
-          brandId: Number(brandId),
-          slug: category !== 'all' ? category : undefined,
-        },
+        categoryId: Number(id),
       },
-      include: { variants: true, category: true },
+      include: { variants: true, category: { include: { brand: true } } },
       orderBy: { id: 'desc' },
     })
     res.json(products)
@@ -453,39 +458,63 @@ app.post(
   '/api/categories',
   upload.single('image'),
   asyncHandler(async (req, res) => {
-    const { name, brandId, displayName, uploadType } = req.body
+    const { name, displayName, uploadType } = req.body
 
-    const brand = await prisma.brand.findUnique({ where: { id: brandId } })
-    if (!brand) throw new AppError(404, 'Brand not exists')
+    let brandId =
+      req.body.brandId &&
+      req.body.brandId !== 'null' &&
+      req.body.brandId !== 'undefined'
+        ? parseInt(req.body.brandId, 10)
+        : null
 
-    const slug = `${brand.name.toLowerCase().replace(/\s+/g, '_')}_${slugify(
-      name,
-      {
+    let slug = ''
+    const cleanupFile = () => {
+      if (req.file) SyncFs.unlinkSync(req.file.path)
+    }
+    if (brandId) {
+      const brand = await prisma.brand.findUnique({ where: { id: brandId } })
+      if (!brand) {
+        cleanupFile()
+        throw new AppError(404, 'Brand not exists')
+      }
+
+      const existingCategory = await prisma.category.findFirst({
+        where: { name, brandId },
+      })
+
+      if (existingCategory) {
+        cleanupFile()
+        throw new AppError(
+          400,
+          `Category name already exists exists for brand ${brand.name}.`
+        )
+      }
+
+      slug = `${brand.name.toLowerCase().replace(/\s+/g, '_')}_${slugify(name, {
         lower: true,
         replacement: '_',
-      }
-    )}`
+      })}`
+    } else {
+      const duplicateGeneric = await prisma.category.findFirst({
+        where: { name: name, brandId: null },
+      })
 
-    const baseUrl =
-      process.env.NODE_ENV === 'development'
-        ? `${req.protocol}://${req.get('host')}`
-        : process.env.VITE_API_URL
+      if (duplicateGeneric) {
+        cleanupFile()
+        throw new AppError(400, `Generic category '${name}' already exists`)
+      }
+      slug = slugify(name, { lower: true, replacement: '_' })
+    }
+
     const imageUrl = req.file
       ? `/uploads/${uploadType}/${req.file.filename}`
       : null
 
-    const existingCategory = await prisma.category.findUnique({
-      where: { slug },
-    })
-    if (existingCategory) {
-      if (req.file) SyncFs.unlinkSync(req.file.path)
-      throw new AppError(400, 'Category with this name already exists')
-    }
     const newCat = await prisma.category.create({
       data: {
         name,
         slug,
-        brandId: brandId ? Number(brandId) : null,
+        brandId: brandId,
         displayName: displayName || null,
         image: imageUrl,
       },
@@ -500,69 +529,107 @@ app.put(
   upload.single('image'),
   asyncHandler(async (req, res) => {
     const { id } = req.params
-    const { name, brandId, displayName, uploadType } = req.body
+    const { name, displayName, uploadType } = req.body
 
-    const brand = await prisma.brand.findUnique({ where: { id: brandId } })
-    if (!brand) throw new AppError(404, 'Brand not exists')
+    let brandId =
+      req.body.brandId &&
+      req.body.brandId !== 'null' &&
+      req.body.brandId !== 'undefined'
+        ? parseInt(req.body.brandId, 10)
+        : null
 
-    const catExist = await prisma.category.findUnique({
+    const cleanupNewFile = () => {
+      if (req.file) SyncFs.unlinkSync(req.file.path)
+    }
+
+    const currentCategory = await prisma.category.findUnique({
       where: { id: Number(id) },
     })
 
-    if (!catExist) throw new AppError(404, 'Category not found')
-    // Handle Image Update
-    const baseUrl =
-      process.env.NODE_ENV === 'development'
-        ? `${req.protocol}://${req.get('host')}`
-        : process.env.VITE_API_URL
-
-    let imageUrl = catExist.image
-
-    if (req.file) {
-      const uploadDir = path.join(__dirname, '..', 'uploads', uploadType)
-
-      if (imageUrl) {
-        // Extract filename from URL
-        const urlParts = imageUrl.split('/')
-        const filename = urlParts[urlParts.length - 1]
-
-        // Build the full file path
-        const oldPath = path.join(uploadDir, filename)
-
-        if (SyncFs.existsSync(oldPath)) SyncFs.unlinkSync(oldPath)
-      }
-      // 2. Set new image path
-      imageUrl = `/uploads/${uploadType}/${req.file.filename}`
+    if (!currentCategory) {
+      cleanupNewFile()
+      throw new AppError(404, 'Category not found')
     }
+    let slug = ''
 
-    const slug = `${brand.name.toLowerCase().replace(/\s+/g, '_')}_${slugify(
-      name,
-      {
+    if (brandId) {
+      const brand = await prisma.brand.findUnique({ where: { id: brandId } })
+      if (!brand) {
+        cleanupNewFile()
+        throw new AppError(404, 'Brand does not exist')
+      }
+
+      const duplicateInBrand = await prisma.category.findFirst({
+        where: {
+          name: name,
+          brandId: brandId,
+          id: { not: Number(id) }, // Important: Don't find self
+        },
+      })
+
+      if (duplicateInBrand) {
+        cleanupNewFile()
+        throw new AppError(
+          400,
+          `Category '${name}' already exists for brand '${brand.name}'`
+        )
+      }
+
+      // Generate Brand-Specific Slug
+      slug = `${brand.name.toLowerCase().replace(/\s+/g, '_')}_${slugify(name, {
         lower: true,
         replacement: '_',
-      }
-    )}`
-    if (slug !== catExist.slug) {
-      const existingCategory = await prisma.category.findUnique({
-        where: { slug },
+      })}`
+    } else {
+      const duplicateGeneric = await prisma.category.findFirst({
+        where: {
+          name: name,
+          brandId: null,
+          id: { not: Number(id) },
+        },
       })
-      if (existingCategory) {
-        if (req.file) SyncFs.unlinkSync(req.file.path)
-        throw new AppError(400, 'Category with this name already exists')
+
+      if (duplicateGeneric) {
+        cleanupNewFile()
+        throw new AppError(400, `Generic category '${name}' already exists`)
       }
+
+      // Generate Generic Slug
+      slug = slugify(name, { lower: true, replacement: '_' })
     }
+
+    const newImageUrl = req.file
+      ? `/uploads/${uploadType}/${req.file.filename}`
+      : currentCategory.image
 
     const updatedCategory = await prisma.category.update({
       where: { id: Number(id) },
       data: {
         name,
         slug,
-        brandId: brandId ? Number(brandId) : null,
+        brandId,
         displayName: displayName || null,
-        image: imageUrl,
+        image: newImageUrl,
       },
       include: { brand: true },
     })
+
+    if (req.file && currentCategory.image) {
+      try {
+        const uploadDir = path.join(__dirname, '..', 'uploads', uploadType)
+        const urlParts = currentCategory.image.split('/')
+        const filename = urlParts[urlParts.length - 1]
+        const oldPath = path.join(uploadDir, filename)
+
+        if (SyncFs.existsSync(oldPath)) {
+          SyncFs.unlinkSync(oldPath)
+        }
+      } catch (err) {
+        console.error('Failed to delete old image:', err)
+        // Don't throw here, the update was successful
+      }
+    }
+
     res.json(updatedCategory)
   })
 )

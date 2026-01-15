@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import {
   AlertCircle,
   CheckCircle2,
@@ -55,6 +56,12 @@ export const SettingsView = () => {
     },
   })
 
+  const { data: settings, isLoading: isSettingsLoading } = useQuery({
+    queryKey: ['site-settings'],
+    queryFn: getSettings,
+    staleTime: 1000 * 60 * 60,
+  })
+
   // 2. Setup Field Array for Banners
   const { fields, append, remove, update } = useFieldArray({
     control,
@@ -66,30 +73,21 @@ export const SettingsView = () => {
 
   // 3. Load Data
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await getSettings()
+    const data = settings
+    if (data) {
+      const loadedBanners = (data.banners as unknown as BannerItem[]) || [
+        { name: 'Banner1' },
+      ]
 
-        // Parse the banners from JSON (assuming API returns it mostly matching our shape)
-        // If banners is null in DB, default to empty array
-        const loadedBanners = (data.banners as unknown as BannerItem[]) || [
-          { name: 'Banner1' },
-        ]
-
-        reset({
-          phone: data.phone || '',
-          email: data.email || '',
-          address: data.address || '',
-          mapUrl: data.mapUrl || '',
-          banners: loadedBanners,
-        })
-      } catch (error) {
-        console.error('Failed to load settings', error)
-        toast.error('Failed to load settings')
-      }
+      reset({
+        phone: data.phone || '',
+        email: data.email || '',
+        address: data.address || '',
+        mapUrl: data.mapUrl || '',
+        banners: loadedBanners,
+      })
     }
-    loadData()
-  }, [reset])
+  }, [reset, settings])
 
   // Helper: Extract URL from iframe tag
   const extractUrl = (input: string) => {
@@ -360,9 +358,7 @@ export const SettingsView = () => {
                           Banner Name
                         </label>
                         <input
-                          {...register(`banners.${index}.name` as const, {
-                            required: 'Name is required',
-                          })}
+                          {...register(`banners.${index}.name` as const)}
                           placeholder="e.g. Summer Sale"
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                         />

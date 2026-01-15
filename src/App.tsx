@@ -34,7 +34,7 @@ const AppContent: React.FC = () => {
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['site-settings'],
     queryFn: getSettings,
-    staleTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 60,
   })
 
   // 3. REPLACE useEffect/useState with useQuery for Products
@@ -195,7 +195,6 @@ const AppContent: React.FC = () => {
   )
 }
 
-// 5. Export the Main App Wrapper that provides the Query Client
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>

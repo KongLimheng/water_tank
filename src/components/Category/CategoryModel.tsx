@@ -1,10 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
 import { Camera, Upload, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { useCategoryMutations } from '../hooks/useCategoryMutations'
-import { getBrands } from '../services/brandService'
-import { CategoryList } from '../types'
+import { useCategoryMutations } from '../../hooks/useCategoryMutations'
+import { CategoryList } from '../../types'
 
 interface Brand {
   id: number
@@ -20,23 +18,19 @@ export const CategoryModal: React.FC<{
   isOpen: boolean
   onClose: () => void
   category?: CategoryList | null
-}> = ({ isOpen, onClose, category }) => {
+  brands: Brand[]
+}> = ({ isOpen, onClose, category, brands }) => {
   const {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<CategoryFormValues>()
 
   const { addCategory, updateCategory, isSaving } = useCategoryMutations()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-
-  const { data: brands = [] } = useQuery({
-    queryKey: ['brands', 'modal'],
-    queryFn: getBrands,
-    staleTime: 1000 * 60 * 5,
-  })
 
   useEffect(() => {
     if (isOpen) {
@@ -49,7 +43,6 @@ export const CategoryModal: React.FC<{
           displayName: category.displayName || '',
           brandId: category.brandId?.toString() || '',
         })
-        // Set existing image preview
         setPreviewUrl(category.image || null)
       } else {
         reset({ name: '', displayName: '', brandId: '' })
@@ -82,6 +75,15 @@ export const CategoryModal: React.FC<{
     const options = {
       onSuccess: () => {
         onClose()
+      },
+      onError: (error: any) => {
+        setError(
+          'name',
+          {
+            message: error.message,
+          },
+          { shouldFocus: true }
+        )
       },
     }
 
@@ -150,8 +152,7 @@ export const CategoryModal: React.FC<{
                 Category Name
               </label>
               <input
-                {...register('name', { required: 'System name is required' })}
-                disabled={!!category}
+                {...register('name', { required: 'Category name is required' })}
                 className={`w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${
                   category
                     ? 'bg-slate-100 text-slate-500 cursor-not-allowed'

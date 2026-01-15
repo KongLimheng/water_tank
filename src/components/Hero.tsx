@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { getSettings } from '../services/settingsService'
 import { BannerItem } from '../types'
@@ -5,27 +6,28 @@ export const Hero: React.FC = () => {
   const [banners, setBanners] = useState<BannerItem[]>([])
   const [loading, setLoading] = useState(true)
 
+  const { data: settings, isLoading: isSettingsLoading } = useQuery({
+    queryKey: ['site-settings'],
+    queryFn: getSettings,
+    staleTime: 1000 * 60 * 60,
+  })
   // 1. Fetch Banners
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const settings = await getSettings()
-        // Ensure banners is an array
-        const bannerList = (settings.banners as unknown as BannerItem[]) || []
-        setBanners(bannerList)
-      } catch (err) {
-        console.error('Failed to load home banners', err)
-      } finally {
-        setLoading(false)
-      }
+    try {
+      // Ensure banners is an array
+      const bannerList = (settings.banners as unknown as BannerItem[]) || []
+      setBanners(bannerList)
+    } catch (err) {
+      console.error('Failed to load home banners', err)
+    } finally {
+      setLoading(false)
     }
-    fetchBanners()
-  }, [])
+  }, [settings])
 
   if (loading) return <HomeSkeleton />
 
   return (
-    <div className="flex gap-16 flex-col px-40 mt-4">
+    <div className="flex gap-16 flex-col px-10 xl:px-40 mt-4">
       {banners.map((banner, index) => (
         <ScrollRevealRow banner={banner} index={index} />
         // <div key={index} className="relative bg-primary-900 overflow-hidden">
@@ -80,7 +82,7 @@ const ScrollRevealRow = ({
         }
            `}
     >
-      <div className="group relative w-full h-[50vh] md:h-[60vh] rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-primary-500/20">
+      <div className="group relative w-full h-[30vh] md:h-[50vh] xl:h-[60vh] rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-primary-500/20">
         {/* Image with Zoom Effect */}
         <img
           src={banner.banner_image}
@@ -93,7 +95,7 @@ const ScrollRevealRow = ({
 
         {/* Content */}
         <div className="absolute bottom-0 left-0 p-8 w-full">
-          <h1 className="text-6xl font-bold text-white leading-tight">
+          <h1 className="text-2xl md:text-4xl xl:text-6xl font-bold text-primary-600 leading-tight">
             {banner.name}
           </h1>
         </div>

@@ -1,6 +1,6 @@
-import { Category } from '@prisma/client' // Adjust path to your types
 import { ArrowRight, Image as ImageIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Category } from '../../types'
 
 interface CategoryCardProps {
   category: Category
@@ -12,7 +12,7 @@ const CategoryCard = ({ category }: CategoryCardProps) => {
 
   return (
     <Link
-      to={`/shop?category=${category.slug}&brand=${category.brand || 'all'}`}
+      to={`/shop?category=${category.id}`}
       className="group flex flex-col h-full bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:border-primary-100 transition-all duration-300"
     >
       {/* Image Section */}
@@ -31,16 +31,14 @@ const CategoryCard = ({ category }: CategoryCardProps) => {
         )}
 
         {/* Brand Badge Overlay */}
-        {category.brand && category.brand.toLowerCase() !== 'no' && (
+        {category.brand && category.brand.name.toLowerCase() !== 'no' && (
           <div className="absolute top-5 left-5">
             <span
-              className={`px-3 py-1 rounded-full text-[20px] font-bold uppercase tracking-wider shadow-sm ${
-                category.brand.toLowerCase() === 'grown'
-                  ? 'bg-green-100/70 text-green-700'
-                  : 'bg-blue-100/70 text-blue-700'
-              }`}
+              className={`px-3 py-1 rounded-full text-[20px] font-bold uppercase tracking-wider shadow-sm  bg-green-100/70 text-primary-700
+              
+              `}
             >
-              {category.brand}
+              {category.brand.name}
             </span>
           </div>
         )}

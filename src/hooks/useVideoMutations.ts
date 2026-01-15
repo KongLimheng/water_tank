@@ -16,19 +16,19 @@ export const useVideoMutations = () => {
 
   const addMutation = useMutation({
     mutationFn: createVideo,
-    onSuccess: () => onSuccess('Category created successfully'),
+    onSuccess: () => onSuccess('Videos created successfully'),
     onError,
   })
 
   const updateMutation = useMutation({
     mutationFn: updateVideo,
-    onSuccess: () => onSuccess('Category updated successfully'),
+    onSuccess: () => onSuccess('Videos updated successfully'),
     onError,
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteVideo,
-    onSuccess: () => onSuccess('Category delete successfully'),
+    onSuccess: () => onSuccess('Videos delete successfully'),
     onError,
   })
 

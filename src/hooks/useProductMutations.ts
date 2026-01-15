@@ -9,31 +9,31 @@ import {
 export const useProductMutations = () => {
   const queryClient = useQueryClient()
 
+  const onSuccess = (msg: string) => {
+    queryClient.invalidateQueries({ queryKey: ['products'] })
+    toast.success(msg)
+  }
+
+  const onError = (error: any) => {
+    toast.error(error.message || 'Operation failed')
+  }
+
   const addMutation = useMutation({
     mutationFn: createProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      console.log('Product added successfully!')
-    },
-    onError: (error) => {
-      console.error('Error adding product:', error)
-    },
+    onSuccess: () => onSuccess('Product added successfully!'),
+    onError,
   })
 
   const updateMutation = useMutation({
     mutationFn: updateProduct,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['products', 'all'] })
-      console.log('Product updated:', data.name)
-    },
+    onSuccess: () => onSuccess('Product updated successfully'),
+    onError,
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      toast.success('Product delete successfully')
-    },
+    onSuccess: () => onSuccess('Product delete successfully'),
+    onError,
   })
 
   return {
@@ -43,6 +43,5 @@ export const useProductMutations = () => {
     isAdding: addMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
-    addError: addMutation.error,
   }
 }

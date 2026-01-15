@@ -1,11 +1,13 @@
 import { PlaySquare } from 'lucide-react'
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import Logo from '../public/logo.jpg'
 
 const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const navigate = useNavigate()
+  const location = useLocation()
+
+  const isActiveExact = (path: string) => location.pathname === path
 
   return (
     <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
@@ -34,13 +36,20 @@ const Navbar: React.FC = () => {
             {/* Home Link */}
             <Link
               to="/"
-              className="text-sm font-medium transition-colors hover:text-primary-600 text-slate-600"
+              className={`text-sm font-medium transition-colors hover:text-primary-600 , ${
+                isActiveExact('/') ? 'text-primary-600 ' : 'text-slate-600'
+              }`}
             >
               Home
             </Link>
+
             <Link
               to="/products"
-              className="text-sm font-medium transition-colors hover:text-primary-600 text-slate-600"
+              className={`text-sm font-medium transition-colors hover:text-primary-600  py-2 px-2 rounded-xl ${
+                isActiveExact('/products') || isActiveExact('/shop')
+                  ? 'text-primary-600 '
+                  : 'text-slate-600'
+              }`}
             >
               Product
             </Link>
@@ -48,7 +57,11 @@ const Navbar: React.FC = () => {
             {/* Video Guide Link */}
             <Link
               to="/videos"
-              className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary-600 text-slate-600"
+              className={`flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary-600 ${
+                isActiveExact('/videos')
+                  ? 'text-primary-600 '
+                  : 'text-slate-600'
+              }`}
             >
               <PlaySquare size={16} /> Video Guide
             </Link>
@@ -62,7 +75,11 @@ const Navbar: React.FC = () => {
           <div className="px-4 py-4 space-y-2">
             <Link
               to="/products"
-              className="text-sm font-medium transition-colors hover:text-primary-600 text-slate-600"
+              className={`text-sm font-medium transition-colors hover:text-primary-600 ${
+                isActiveExact('/products')
+                  ? 'text-primary-600 '
+                  : 'text-slate-600'
+              }`}
             >
               Product
             </Link>
@@ -71,7 +88,11 @@ const Navbar: React.FC = () => {
             <Link
               to="/videos"
               onClick={() => setMobileMenuOpen(false)}
-              className=" w-full text-left py-2 px-3 rounded-lg flex items-center gap-2 text-slate-600"
+              className={`w-full text-left py-2 px-3 rounded-lg flex items-center gap-2 ${
+                isActiveExact('/videos')
+                  ? 'text-primary-600 '
+                  : 'text-slate-600'
+              }`}
             >
               <PlaySquare size={16} /> Video Guides
             </Link>

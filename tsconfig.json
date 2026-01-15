@@ -15,7 +15,7 @@
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "paths": {
-      "@/*": ["./*"],
+      "@/*": ["./src*"],
       "@/types/*": ["./types/*"]
     },
     // "allowImportingTsExtensions": true,

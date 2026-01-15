@@ -16,7 +16,7 @@ const VideoGallery: React.FC = () => {
         <h2 className="text-3xl font-bold text-slate-900">Video Guides</h2>
         <p className="text-slate-500 mt-4 max-w-2xl mx-auto">
           Helpful tutorials, product demonstrations, and maintenance tips to get
-          the most out of your H2O Premium experience.
+          the most out of your experience.
         </p>
       </div>
 

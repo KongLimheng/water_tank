@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import slugify from 'slugify'
 import { prisma } from './prismaClient.js'
 // Products with their default variants
 const productsWithVariants = [
@@ -243,7 +244,7 @@ async function main() {
   // 1. Create users
   const hashedPassword = await bcrypt.hash('Admin@123', 12)
 
-  const superadmin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'superadmin@admin.com' },
     update: {},
     create: {
@@ -253,72 +254,54 @@ async function main() {
       name: 'Super Admin',
     },
   })
-  const Brands = ['grown', 'diamond']
-
-  await prisma.category.upsert({
-    where: { slug: 'grown_plastic' },
-    update: {},
-    create: {
-      name: 'Plastic',
-      brand: 'grown',
-      slug: 'grown_plastic',
+  const seedData = [
+    {
+      brandName: 'Crown',
+      categories: ['Plastic', 'Stainless Steel'], // I corrected "Stenless" to "Stainless"
     },
-  })
-
-  await prisma.category.upsert({
-    where: { slug: 'grown_stainless_steel' },
-    update: {},
-    create: {
-      name: 'Stainless Steel',
-      brand: 'grown',
-      slug: 'grown_stainless_steel',
+    {
+      brandName: 'Diamond',
+      categories: ['Plastic', 'Stainless Steel'],
     },
-  })
+  ]
 
-  await prisma.category.upsert({
-    where: { slug: 'diamond_plastic' },
-    update: {},
-    create: {
-      name: 'Plastic',
-      brand: 'diamond',
-      slug: 'diamond_plastic',
-    },
-  })
+  for (const item of seedData) {
+    // 1. Create the Brand
+    const brandSlug = slugify(item.brandName)
 
-  await prisma.category.upsert({
-    where: { slug: 'diamond_stainless_steel' },
-    update: {},
-    create: {
-      name: 'Stainless Steel',
-      brand: 'diamond',
-      slug: 'diamond_stainless_steel',
-    },
-  })
+    const brand = await prisma.brand.upsert({
+      where: { slug: brandSlug },
+      update: {}, // If exists, do nothing
+      create: {
+        name: item.brandName,
+        slug: brandSlug,
+      },
+    })
 
-  console.log('\nCreating products with variants...')
+    console.log(`✅ Brand: ${brand.name} (ID: ${brand.id})`)
 
-  // for (const item of productsWithVariants) {
-  //   // Create product
-  //   const product = await prisma.product.create({
-  //     data: item.product,
-  //   })
+    // 2. Create the Categories for this Brand
+    for (const catName of item.categories) {
+      // Slug Logic: brand_category (matches your API)
+      const catSlug = `${brandSlug}_${slugify(catName)}`
 
-  //   console.log(`Created product: ${product.name} (ID: ${product.id})`)
+      await prisma.category.upsert({
+        where: { slug: catSlug },
+        update: {
+          // Optional: Update relation if needed
+          brandId: brand.id,
+        },
+        create: {
+          name: catName,
+          slug: catSlug,
+          brandId: brand.id,
+          displayName: catName, // Optional default display name
+        },
+      })
 
-  //   // Create default variant for this product
-  //   const variant = await prisma.variant.create({
-  //     data: {
-  //       ...item.variant,
-  //       productId: product.id,
-  //     },
-  //   })
-
-  //   console.log(
-  //     `Created variant: ${variant.name || 'Default'} for product ID: ${
-  //       product.id
-  //     }`
-  //   )
-  // }
+      console.log(`   └─ Category: ${catName} [${catSlug}]`)
+    }
+  }
 
   console.log('✅ Database seeded successfully!')
   console.log('\n📋 Created:')
