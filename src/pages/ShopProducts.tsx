@@ -81,7 +81,6 @@ const ShopProducts = () => {
       <ProductDetailsModal
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
-        onAddToCart={() => setSelectedProduct(null)}
       />
     </>
   )

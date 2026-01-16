@@ -1,11 +1,30 @@
-import { PlaySquare } from 'lucide-react'
-import React, { useState } from 'react'
+import { MenuIcon, PlaySquare } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import Logo from '../public/logo.jpg'
 
 const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setMobileMenuOpen(false) // Mobile: Auto close
+      } else {
+        setMobileMenuOpen(true) // Desktop: Auto open
+      }
+    }
+
+    // Set initial state on mount
+    handleResize()
+
+    // Add event listener
+    window.addEventListener('resize', handleResize)
+
+    // Cleanup listener on unmount
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const isActiveExact = (path: string) => location.pathname === path
 
@@ -25,7 +44,7 @@ const Navbar: React.FC = () => {
               <h1 className="text-sm md:text-xl font-bold text-slate-900 tracking-tight">
                 Fa De Manufacture Co., LTD.
               </h1>
-              <p className="text-[10px] md:text-[14px] text-slate-500 font-medium uppercase">
+              <p className="text-[8px] md:text-[10px] text-slate-500 font-medium uppercase">
                 ផលិត និងផ្គត់ផ្គង់ បាសាំងទឹកអីណុក & ជ័រគ្រប់ប្រភេទ
               </p>
             </div>
@@ -66,6 +85,13 @@ const Navbar: React.FC = () => {
               <PlaySquare size={16} /> Video Guide
             </Link>
           </div>
+
+          <button
+            className="md:hidden p-2 text-slate-600"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <MenuIcon className='=size-6' />
+          </button>
         </div>
       </div>
 
@@ -88,13 +114,13 @@ const Navbar: React.FC = () => {
             <Link
               to="/videos"
               onClick={() => setMobileMenuOpen(false)}
-              className={`w-full text-left py-2 px-3 rounded-lg flex items-center gap-2 ${
+              className={`w-full text-sm text-left py-2 rounded-lg flex items-center gap-2 ${
                 isActiveExact('/videos')
                   ? 'text-primary-600 '
                   : 'text-slate-600'
               }`}
             >
-              <PlaySquare size={16} /> Video Guides
+              Video Guides
             </Link>
           </div>
         </div>

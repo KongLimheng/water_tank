@@ -1,7 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 import { config } from 'dotenv'
-
 // Load .env.local file
 config({ path: ['.env.local'] })
 

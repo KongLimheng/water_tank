@@ -121,7 +121,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
               <img
                 src={img}
                 alt={`${name} ${index}`}
-                className="w-20 h-20 object-cover rounded-lg"
+                className="size-20 object-cover rounded-lg"
                 loading="lazy"
                 onLoad={() => setImageLoaded(true)}
                 onError={(e) =>
@@ -147,7 +147,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             loading="lazy"
             decoding="async"
             onLoad={() => setImageLoaded(true)}
-            className={`transition-transform duration-300 max-h-[500px] ${
+            className={`transition-transform duration-300 md:max-h-[500px] max-h-[320px] ${
               isZoomed ? 'scale-150' : 'scale-100'
             } ${imageLoaded ? 'image-loaded' : ''}`}
             style={

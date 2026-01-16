@@ -27,7 +27,7 @@ export const Hero: React.FC = () => {
   if (loading) return <HomeSkeleton />
 
   return (
-    <div className="flex gap-16 flex-col px-10 xl:px-40 mt-4">
+    <div className="flex gap-4 md:gap-8 flex-col px-5 xl:px-40 mt-4">
       {banners.map((banner, index) => (
         <ScrollRevealRow banner={banner} index={index} />
         // <div key={index} className="relative bg-primary-900 overflow-hidden">
@@ -82,23 +82,23 @@ const ScrollRevealRow = ({
         }
            `}
     >
-      <div className="group relative w-full h-[30vh] md:h-[50vh] xl:h-[60vh] rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-primary-500/20">
+      <div className="group relative w-full max-h-[700px] rounded md:rounded-xl overflow-hidden shadow-xl transition-all duration-500 hover:shadow-primary-500/20">
         {/* Image with Zoom Effect */}
         <img
           src={banner.banner_image}
           alt={banner.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          className=" w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 
         {/* Gradient Overlay for Text Readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
 
         {/* Content */}
-        <div className="absolute bottom-0 left-0 p-8 w-full">
+        {/* <div className="absolute bottom-0 left-0 p-8 w-full">
           <h1 className="text-2xl md:text-4xl xl:text-6xl font-bold text-primary-600 leading-tight">
             {banner.name}
           </h1>
-        </div>
+        </div> */}
       </div>
     </div>
   )
